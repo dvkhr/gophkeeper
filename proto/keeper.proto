@@ -1,0 +1,63 @@
+// proto/keeper.proto
+
+syntax = "proto3";
+
+package keeper;
+
+option go_package = "github.com/yourusername/gophkeeper/proto";
+
+service KeeperService {
+  rpc Register (RegisterRequest) returns (AuthResponse);
+  rpc Login (LoginRequest) returns (AuthResponse);
+  rpc SyncData (SyncRequest) returns (SyncResponse);
+  rpc GetData (GetDataRequest) returns (DataResponse);
+  rpc StoreData (StoreDataRequest) returns (StatusResponse);
+}
+
+message RegisterRequest {
+  string login = 1;
+  bytes encrypted_password = 2;
+}
+
+message LoginRequest {
+  string login = 1;
+  bytes encrypted_password = 2;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message DataRecord {
+  string id = 1;
+  string type = 2; // loginpass, text, binary, card, otp
+  bytes encrypted_data = 3;
+  map<string, string> metadata = 4;
+  int64 timestamp = 5;
+}
+
+message SyncRequest {
+  repeated DataRecord records = 1;
+}
+
+message SyncResponse {
+  repeated DataRecord records = 1;
+}
+
+message GetDataRequest {
+  string type = 1;
+}
+
+message DataResponse {
+  repeated DataRecord records = 1;
+}
+
+message StoreDataRequest {
+  DataRecord record = 1;
+}
+
+message StatusResponse {
+  bool success = 1;
+  string message = 2;
+}

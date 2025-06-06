@@ -1,0 +1,29 @@
+# Build artifacts
+/build/
+/bin/
+/gen/
+
+# Go-specific
+/vendor/
+*.test
+*.log
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE / editor files
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# Testing
+/coverage.out
+/testdata/
+/tests/_output/
+
+# Environment variables
+.env
+.env.local

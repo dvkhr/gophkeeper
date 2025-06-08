@@ -7,7 +7,7 @@ GEN_DIR=gen
 
 all: build
 
-build:
+build: generate
 	mkdir -p build
 	go build -o ${BINARY_CLIENT} ./client/cmd
 	go build -o ${BINARY_SERVER} ./server/cmd
@@ -28,6 +28,10 @@ run-client:
 	./${BINARY_CLIENT} --help
 
 generate:
+	@if ! [ -x "$$(command -v protoc)" ]; then \
+		echo "protoc not found. Please install protobuf compiler."; \
+		exit 1; \
+	fi
 	protoc \
         --go_out=${GEN_DIR} \
         --go_opt=module=github.com/dvkhr/gophkeeper \

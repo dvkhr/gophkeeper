@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package keeper;
 
-option go_package = "github.com/yourusername/gophkeeper/proto";
+option go_package = "github.com/dvkhr/gophkeeper/proto";
 
 service KeeperService {
   rpc Register (RegisterRequest) returns (AuthResponse);

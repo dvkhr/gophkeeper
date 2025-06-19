@@ -3,8 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
+	"github.com/dvkhr/gophkeeper/pkg/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -18,6 +18,6 @@ func Connect(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Connected to the database")
+	logger.Logg.Info("Connected to the database")
 	return db, nil
 }

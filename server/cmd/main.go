@@ -5,7 +5,10 @@ import (
 	"os"
 
 	"github.com/dvkhr/gophkeeper/pkg/logger"
+	"github.com/dvkhr/gophkeeper/server/internal/db"
 )
+
+const dsn = "host=localhost port=5432 user=postgres password=postgres dbname=gophkeeper sslmode=disable"
 
 func main() {
 	// Инициализируем логгер
@@ -14,14 +17,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Тестовые сообщения
-	logger.Logg.Info("Application started")
-	logger.Logg.Debug("This is a debug message")
-	logger.Logg.Warn("This is a warning message")
-	logger.Logg.Error("This is an error message")
+	dbConn, err := db.Connect(dsn)
+	if err != nil {
+		logger.Logg.Error("Failed to connect to DB", "error", err)
+		return
+	}
+	defer dbConn.Close()
 
-	// Пример маскировки чувствительных данных
-	jsonData := `{"username": "admin", "password": "secret123"}`
-	masked := logger.MaskSensitiveData(jsonData)
-	logger.Logg.Info("Masked data", "data", masked)
+	if err := db.ApplyMigrations(dbConn); err != nil {
+		logger.Logg.Error("Failed to apply migrations", "error", err)
+		return
+	}
+
+	logger.Logg.Info("Database is ready. Starting server...")
+
 }

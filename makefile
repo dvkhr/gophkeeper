@@ -3,7 +3,7 @@ BINARY_CLIENT=build/gophkeeper-client
 BINARY_SERVER=build/gophkeeper-server
 
 PROTO_FILES=proto/keeper.proto
-GEN_DIR=gen
+GEN_DIR=.
 
 all: build
 
@@ -38,3 +38,5 @@ generate:
         --go-grpc_out=${GEN_DIR} \
         --go-grpc_opt=module=github.com/dvkhr/gophkeeper \
         ${PROTO_FILES}
+
+		

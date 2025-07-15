@@ -1,87 +1,82 @@
-// proto/keeper.proto
-
 syntax = "proto3";
 
 package keeper;
 
 option go_package = "github.com/dvkhr/gophkeeper/pb";
 
+// KeeperService предоставляет функционал для регистрации, аутентификации,
+// хранения и синхронизации защищённых данных пользователя.
 service KeeperService {
+  // Register регистрирует нового пользователя
   rpc Register (RegisterRequest) returns (AuthResponse);
-  //rpc Register (RegisterRequest) returns (RegisterResponse);
+
+  // Login выполняет вход пользователя и выдачу токенов
   rpc Login (LoginRequest) returns (AuthResponse);
-  //rpc Login (LoginRequest) returns (LoginResponse);
+
+  // SyncData синхронизирует данные между клиентом и сервером
   rpc SyncData (SyncRequest) returns (SyncResponse);
+
+  // GetData возвращает данные указанного типа
   rpc GetData (GetDataRequest) returns (DataResponse);
+
+  // StoreData сохраняет новую запись на сервере
   rpc StoreData (StoreDataRequest) returns (StatusResponse);
 }
 
+// RegisterRequest содержит данные для регистрации нового пользователя
 message RegisterRequest {
-  string login = 1;
-  bytes encrypted_password = 2;
+  string login = 1;                  // Логин пользователя
+  bytes encrypted_password = 2;      // Зашифрованный пароль
 }
 
+// LoginRequest содержит данные для входа пользователя
 message LoginRequest {
-  string login = 1;
-  bytes encrypted_password = 2;
+  string login = 1;                  // Логин пользователя
+  bytes encrypted_password = 2;      // Зашифрованный пароль
 }
 
+// AuthResponse возвращается после успешной регистрации или входа
 message AuthResponse {
-  string access_token = 1;
-  string refresh_token = 2;
+  string access_token = 1;           // JWT-токен доступа
+  string refresh_token = 2;          // Refresh-токен
 }
 
-/*// Объект, который отправляется при вызове RPC-метода (ручки) Register.
-message RegisterRequest {
-  string email = 1; // Email of the user to register.
-  string password = 2; // Password of the user to register.
-}
-
-// Объект, который метод (ручка) вернёт.
-message RegisterResponse {
-  int64 user_id = 1; // User ID of the registered user.
-}
-
-// То же самое для метода Login()
-message LoginRequest {
-  string email = 1; // Email of the user to login.
-  string password = 2; // Password of the user to login.
-  int32 app_id = 3; // ID of the app to login to.
-}
-
-message LoginResponse {
-  string token = 1; // Auth token of the logged in user.
-}*/
-
+// DataRecord представляет одну запись данных пользователя
 message DataRecord {
-  string id = 1;
-  string type = 2; // loginpass, text, binary, card, otp
-  bytes encrypted_data = 3;
-  map<string, string> metadata = 4;
-  int64 timestamp = 5;
+  string id = 1;                     // Уникальный идентификатор записи
+  string type = 2;                   // Тип данных: loginpass, text, binary, card, otp
+  bytes encrypted_data = 3;          // Зашифрованное содержимое данных
+  map<string, string> metadata = 4;  // Метаданные (например: сайт, банк, личность)
+  int64 timestamp = 5;               // Время последнего изменения (Unix timestamp)
 }
 
+// SyncRequest используется для синхронизации данных между клиентом и сервером
 message SyncRequest {
-  repeated DataRecord records = 1;
+  repeated DataRecord records = 1;   // Список записей для синхронизации
 }
 
+// SyncResponse возвращает обновлённые данные после синхронизации
 message SyncResponse {
-  repeated DataRecord records = 1;
+  repeated DataRecord records = 1;   // Обновлённые или добавленные записи
 }
 
+// GetDataRequest запрашивает данные определённого типа
 message GetDataRequest {
-  string type = 1;
+  string type = 1;                   // Тип данных: loginpass, text, binary, card, otp
 }
 
+// DataResponse возвращает список данных заданного типа
 message DataResponse {
-  repeated DataRecord records = 1;
+  repeated DataRecord records = 1;   // Найденные записи
 }
 
+// StoreDataRequest используется для сохранения одной записи
 message StoreDataRequest {
-  DataRecord record = 1;
+  DataRecord record = 1;             // Запись, которую нужно сохранить
 }
 
+// StatusResponse возвращается как результат операции
 message StatusResponse {
-  bool success = 1;
-  string message = 2;
+  bool success = 1;                  // Успешно ли выполнено
+  string message = 2;                // Сообщение с результатом
 }

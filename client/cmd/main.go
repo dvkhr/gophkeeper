@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Инициализируем логгер
-	if err := logger.InitLogger("/home/max/go/src/GophKeeper/configs/logger.yml"); err != nil {
+	if err := logger.InitLogger("/home/max/go/src/GophKeeper/configs/logger.yaml"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}

@@ -13,6 +13,8 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// setupTestDB — инициализирует тестовое соединение с базой данных.
+// Применяет миграции один раз и очищает таблицы перед каждым тестом.
 func setupTestDB() *sql.DB {
 	dsn := "postgres://postgres:postgres@localhost:5432/gophkeeper_test?sslmode=disable"
 

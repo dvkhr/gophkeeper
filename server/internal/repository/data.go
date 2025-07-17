@@ -11,19 +11,27 @@ import (
 
 var _ DataRepository = (*PostgresDataRepository)(nil)
 
+// DataRepository — интерфейс для работы с данными пользователя в базе данных.
 type DataRepository interface {
+	// SaveData сохраняет или обновляет запись пользователя в базе данных.
 	SaveData(userID string, data *pb.DataRecord) error
+
+	// GetAllData возвращает все неудалённые данные пользователя.
+	// Данные возвращаются в порядке убывания времени обновления.
 	GetAllData(userID string) ([]*pb.DataRecord, error)
 }
 
+// PostgresDataRepository — реализация DataRepository для PostgreSQL.
 type PostgresDataRepository struct {
 	db *sql.DB
 }
 
+// NewDataRepository создаёт новый экземпляр DataRepository.
 func NewDataRepository(db *sql.DB) DataRepository {
 	return &PostgresDataRepository{db: db}
 }
 
+// SaveData сохраняет или обновляет запись пользователя в базе данных.
 func (r *PostgresDataRepository) SaveData(userID string, data *pb.DataRecord) error {
 	_, err := r.db.ExecContext(context.Background(),
 		`INSERT INTO user_data (id, user_id, type, encrypted_data, metadata)
@@ -41,6 +49,7 @@ func (r *PostgresDataRepository) SaveData(userID string, data *pb.DataRecord) er
 	return nil
 }
 
+// GetAllData возвращает все не удалённые данные пользователя из базы данных.
 func (r *PostgresDataRepository) GetAllData(userID string) ([]*pb.DataRecord, error) {
 	rows, err := r.db.QueryContext(context.Background(),
 		`SELECT id, type, encrypted_data, metadata, EXTRACT(EPOCH FROM updated_at)::int
@@ -57,14 +66,14 @@ func (r *PostgresDataRepository) GetAllData(userID string) ([]*pb.DataRecord, er
 	for rows.Next() {
 		var (
 			record      pb.DataRecord
-			metadataRaw []byte // <-- читаем как []byte
+			metadataRaw []byte
 		)
 
 		if err := rows.Scan(
 			&record.Id,
 			&record.Type,
 			&record.EncryptedData,
-			&metadataRaw, // <-- сначала считываем как []byte
+			&metadataRaw,
 			&record.Timestamp,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)

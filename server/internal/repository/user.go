@@ -8,19 +8,29 @@ import (
 
 var _ UserRepository = (*PostgresUserRepository)(nil)
 
+// UserRepository — интерфейс для работы с пользователями в базе данных.
 type UserRepository interface {
+	// CreateUser создаёт нового пользователя с указанным логином и хэшем пароля.
+	// Возвращает идентификатор созданного пользователя или ошибку.
 	CreateUser(login, passwordHash string) (string, error)
+
+	// GetUserByLogin возвращает пользователя по его логину, если он существует и активен.
+	// Возвращает nil, если пользователь не найден.
 	GetUserByLogin(login string) (*User, error)
 }
 
+// PostgresUserRepository — реализация UserRepository для PostgreSQL.
 type PostgresUserRepository struct {
 	db *sql.DB
 }
 
+// NewUserRepository создаёт новый экземпляр UserRepository.
 func NewUserRepository(db *sql.DB) UserRepository {
 	return &PostgresUserRepository{db: db}
 }
 
+// CreateUser создаёт нового пользователя в базе данных.
+// Возвращает идентификатор пользователя или ошибку.
 func (r *PostgresUserRepository) CreateUser(login, passwordHash string) (string, error) {
 	var userID string
 	err := r.db.QueryRowContext(context.Background(),
@@ -32,6 +42,9 @@ func (r *PostgresUserRepository) CreateUser(login, passwordHash string) (string,
 	return userID, nil
 }
 
+// GetUserByLogin ищет пользователя по логину в базе данных.
+// Возвращает *User, если пользователь найден и активен.
+// Возвращает nil, если пользователь не найден.
 func (r *PostgresUserRepository) GetUserByLogin(login string) (*User, error) {
 	var u User
 	err := r.db.QueryRowContext(context.Background(),

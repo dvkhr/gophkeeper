@@ -5,6 +5,12 @@ BINARY_SERVER=build/gophkeeper-server
 PROTO_FILES=proto/keeper.proto
 GEN_DIR=.
 
+# Настройки тестов
+TEST_PKG=./...
+TEST_FLAGS=-v -race
+COVER_PROFILE=coverage.out
+COVER_HTML=coverage.html
+
 all: build
 
 build: generate
@@ -14,12 +20,22 @@ build: generate
 
 clean:
 	rm -rf build/*
+	rm -f ${COVER_PROFILE} ${COVER_HTML}
+
+
+test: test-unit test-integration
 
 test-unit:
-	go test ./... -coverprofile=coverage.out
+	go test ${TEST_FLAGS} ${TEST_PKG}
 
 test-integration:
-	go test ./tests/integration/...
+	@echo "Запуск интеграционных тестов..."
+	go test ${TEST_FLAGS} ./tests/integration/...
+
+cover:
+	go test -race -coverprofile=${COVER_PROFILE} -covermode=atomic ${TEST_PKG}
+	go tool cover -html=${COVER_PROFILE} -o ${COVER_HTML}
+	@echo "Отчёт о покрытии сохранён в ${COVER_HTML}"
 
 run-server:
 	./${BINARY_SERVER}

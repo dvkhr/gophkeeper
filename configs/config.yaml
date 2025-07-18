@@ -8,3 +8,4 @@ database:
 auth:
   jwt_secret: super-secret-key
   jwt_ttl_hours: 72
+  refresh_token_ttl_days: 7

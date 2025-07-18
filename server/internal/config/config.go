@@ -18,8 +18,9 @@ type Config struct {
 	} `yaml:"database"`
 
 	Auth struct {
-		JWTSecret   string `yaml:"jwt_secret"`
-		JWTTTLHours int    `yaml:"jwt_ttl_hours"`
+		JWTSecret           string `yaml:"jwt_secret"`
+		JWTTTLHours         int    `yaml:"jwt_ttl_hours"`
+		RefreshTokenTTLDays int    `yaml:"refresh_token_ttl_days"`
 	} `yaml:"auth"`
 }
 

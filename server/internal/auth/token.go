@@ -3,51 +3,33 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"time"
 
 	"github.com/dvkhr/gophkeeper/server/internal/config"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/dvkhr/gophkeeper/server/internal/repository"
 )
 
-// Claims — структура полезной нагрузки токена
-type Claims struct {
-	UserID string `json:"user_id"`
-	jwt.RegisteredClaims
-}
+// GenerateRefreshToken генерирует случайный refresh-токен и сохраняет его в БД
+func GenerateRefreshToken(repo repository.TokenRepository, userID string, cfg config.Config) (string, error) {
+	token := GenerateRandomString(32)
+	expiresAt := time.Now().Add(time.Duration(cfg.Auth.RefreshTokenTTLDays) * 24 * time.Hour)
 
-// GenerateToken — создаёт новый JWT-токен для пользователя
-func GenerateToken(cfg config.Config, userID string) (string, error) {
-	claims := &Claims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(cfg.Auth.JWTTTLHours))),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "GophKeeper",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(cfg.Auth.JWTSecret))
-}
-
-// ParseToken — разбирает строку токена и возвращает полезную нагрущку
-func ParseToken(cfg config.Config, tokenStr string) (*Claims, error) {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
-		}
-		return []byte(cfg.Auth.JWTSecret), nil
-	}
-
-	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, keyFunc)
+	err := repo.SaveRefreshToken(token, userID, expiresAt)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	return token, nil
+}
 
-	claims, ok := token.Claims.(*Claims)
-	if !ok || !token.Valid {
-		return nil, jwt.ErrInvalidKey
-	}
+// RevokeRefreshToken отзывает refresh-токен
+func RevokeRefreshToken(repo repository.TokenRepository, token string) error {
+	return repo.RevokeRefreshToken(token)
+}
 
-	return claims, nil
+func GenerateRandomString(n int) string {
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }

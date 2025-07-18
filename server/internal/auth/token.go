@@ -11,7 +11,7 @@ import (
 	"github.com/dvkhr/gophkeeper/server/internal/repository"
 )
 
-// GenerateRefreshToken генерирует случайный refresh-токен и сохраняет его в БД
+// GenerateRefreshToken генерирует случайный refresh-токен и сохраняет его в БД.
 func GenerateRefreshToken(repo repository.TokenRepository, userID string, cfg config.Config) (string, error) {
 	token := GenerateRandomString(32)
 	expiresAt := time.Now().Add(time.Duration(cfg.Auth.RefreshTokenTTLDays) * 24 * time.Hour)
@@ -23,7 +23,7 @@ func GenerateRefreshToken(repo repository.TokenRepository, userID string, cfg co
 	return token, nil
 }
 
-// RevokeRefreshToken отзывает refresh-токен
+// RevokeRefreshToken отзывает refresh-токен.
 func RevokeRefreshToken(repo repository.TokenRepository, token string) error {
 	return repo.RevokeRefreshToken(token)
 }

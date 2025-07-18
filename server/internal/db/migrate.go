@@ -12,6 +12,13 @@ import (
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
 
+// ApplyMigrations применяет SQL-миграции из embed.FS.
+//
+// Принимает:
+//   - db *sql.DB — открытое соединение с базой данных.
+//
+// Возвращает:
+//   - error — ошибку, если какая-либо миграция не была применена.
 func ApplyMigrations(db *sql.DB) error {
 	logger.Logg.Info("Running database migrations...")
 

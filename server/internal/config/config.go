@@ -1,3 +1,5 @@
+// config/config.go
+
 package config
 
 import (
@@ -6,7 +8,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config — это основная структура конфигурации
+// AuthConfig — конфигурация для JWT и refresh-токенов
+type AuthConfig struct {
+	JWTSecret           string `yaml:"jwt_secret"`
+	JWTTTLHours         int    `yaml:"jwt_ttl_hours"`
+	RefreshTokenTTLDays int    `yaml:"refresh_token_ttl_days"`
+}
+
+// Config — основная структура конфигурации приложения
 type Config struct {
 	Server struct {
 		Port int    `yaml:"port"`
@@ -17,14 +26,10 @@ type Config struct {
 		DSN string `yaml:"dsn"`
 	} `yaml:"database"`
 
-	Auth struct {
-		JWTSecret           string `yaml:"jwt_secret"`
-		JWTTTLHours         int    `yaml:"jwt_ttl_hours"`
-		RefreshTokenTTLDays int    `yaml:"refresh_token_ttl_days"`
-	} `yaml:"auth"`
+	Auth AuthConfig `yaml:"auth"`
 }
 
-// Load загружает конфигурацию из указанного файла
+// Load загружает конфигурацию из указанного YAML-файла
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -32,8 +37,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg := &Config{}
-	err = yaml.Unmarshal(data, cfg)
-	if err != nil {
+	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, err
 	}
 

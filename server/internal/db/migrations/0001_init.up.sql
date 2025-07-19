@@ -1,9 +1,22 @@
--- migrations/0001_init.up.sql
+-- 0001_init.up.sql
 
-CREATE TYPE user_status AS ENUM ('active', 'blocked');
-CREATE TYPE data_type AS ENUM ('loginpass', 'text', 'binary', 'card', 'otp');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
+        CREATE TYPE user_status AS ENUM ('active', 'blocked');
+    END IF;
+END
+$$;
 
-CREATE TABLE users (
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'data_type') THEN
+        CREATE TYPE data_type AS ENUM ('loginpass', 'text', 'binary', 'card', 'otp');
+    END IF;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
     login TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -12,7 +25,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE user_data (
+CREATE TABLE IF NOT EXISTS user_data (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type data_type NOT NULL,
@@ -23,13 +36,13 @@ CREATE TABLE user_data (
     deleted BOOLEAN DEFAULT FALSE
 );
 
-CREATE INDEX idx_user_data_user_id ON user_data(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_data_user_id ON user_data(user_id);
 
-CREATE TABLE refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
     token TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE
 );
 
-CREATE INDEX idx_refresh_tokens_expires ON refresh_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);

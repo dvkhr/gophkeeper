@@ -47,3 +47,21 @@ func (suite *AuthTestSuite) TestGenerateAndParseToken() {
 	// Проверяем Issuer
 	assert.Equal(suite.T(), "GophKeeper", claims.Issuer)
 }
+
+func (suite *AuthTestSuite) TestHashPassword_ShouldHashAndPasswordCheck() {
+	password := "securePassword123"
+
+	hashed, err := HashPassword(password)
+	require.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), hashed)
+
+	// Проверяем, что пароль совпадает
+	assert.True(suite.T(), CheckPasswordHash(password, hashed))
+
+	// Проверяем, что неправильный пароль не совпадает
+	assert.False(suite.T(), CheckPasswordHash("wrongPassword", hashed))
+}
+
+func (suite *AuthTestSuite) TestCheckPasswordHash_InvalidHash() {
+	assert.False(suite.T(), CheckPasswordHash("password", "invalid-hash"))
+}

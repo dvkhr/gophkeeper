@@ -1,3 +1,9 @@
+// Package auth предоставляет функции аутентификации и авторизации для GophKeeper.
+// Включает:
+// - генерацию и парсинг JWT-токенов,
+// - работу с refresh-токенами,
+// - хэширование и проверку паролей,
+// - контекстный интерсептор для gRPC.
 package auth
 
 import (
@@ -7,7 +13,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Claims — структура полезной нагрузки токена
+// Claims — структура полезной нагрузки (payload) JWT-токена.
+// Включает идентификатор пользователя и стандартные claims (ExpiresAt, IssuedAt, Issuer и др.).
 type Claims struct {
 	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
@@ -28,7 +35,8 @@ func GenerateToken(cfg config.Config, userID string) (string, error) {
 	return token.SignedString([]byte(cfg.Auth.JWTSecret))
 }
 
-// ParseToken — разбирает строку токена и возвращает полезную нагрущку
+// ParseToken — разбирает строку токена и возвращает claims.
+// Возвращает ошибку, если токен недействителен или подпись не совпадает.
 func ParseToken(cfg config.Config, tokenStr string) (*Claims, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

@@ -15,14 +15,18 @@ import (
 )
 
 // AuthInterceptor — gRPC middleware для проверки JWT-токена в заголовках.
+// Пропускает методы /keeper.KeeperService/Login и /keeper.KeeperService/Register без проверки.
+// Для остальных методов:
+// - извлекает Bearer-токен,
+// - проверяет его валидность,
+// - проверяет, не отозван ли он,
+// - добавляет userID в контекст.
 func AuthInterceptor(cfg config.Config, repo repository.TokenRepository) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Пропускаем методы, не требующие авторизации
 		if info.FullMethod == "/keeper.KeeperService/Login" || info.FullMethod == "/keeper.KeeperService/Register" {
 			return handler(ctx, req)
 		}
 
-		// Получаем токен из заголовков
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, status.Errorf(codes.Unauthenticated, "metadata not provided")
@@ -38,13 +42,11 @@ func AuthInterceptor(cfg config.Config, repo repository.TokenRepository) grpc.Un
 			return nil, status.Errorf(codes.Unauthenticated, "empty token")
 		}
 
-		// Проверяем токен
 		claims, err := ParseToken(cfg, tokenStr)
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
 		}
 
-		// Проверяем, отозван ли токен
 		revoked, err := repo.IsRefreshTokenRevoked(tokenStr)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check token status")
@@ -53,7 +55,6 @@ func AuthInterceptor(cfg config.Config, repo repository.TokenRepository) grpc.Un
 			return nil, status.Errorf(codes.Unauthenticated, "token revoked")
 		}
 
-		// Добавляем userID в контекст
 		ctx = WithUserID(ctx, claims.UserID)
 		return handler(ctx, req)
 	}

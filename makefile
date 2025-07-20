@@ -11,6 +11,10 @@ TEST_FLAGS=-v -race
 COVER_PROFILE=coverage.out
 COVER_HTML=coverage.html
 
+# Документация
+DOC_DIR=docs
+DOC_PORT=6060
+
 all: build
 
 build: generate
@@ -55,4 +59,21 @@ generate:
         --go-grpc_opt=module=github.com/dvkhr/gophkeeper \
         ${PROTO_FILES}
 
-		
+# Генерация документации через локальный сервер
+doc:
+	@mkdir -p ${DOC_DIR}
+	@echo "Запуск локального godoc сервера для генерации HTML..."
+	@godoc -http=:${DOC_PORT} &
+	@sleep 2
+	@echo "Скачиваем HTML-страницы..."
+	@curl -s -o ${DOC_DIR}/auth.html http://localhost:${DOC_PORT}/pkg/github.com/dvkhr/gophkeeper/server/internal/auth/
+	@curl -s -o ${DOC_DIR}/repository.html http://localhost:${DOC_PORT}/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/
+	@curl -s -o ${DOC_DIR}/db.html http://localhost:${DOC_PORT}/pkg/github.com/dvkhr/gophkeeper/server/internal/db/
+	@echo "Останавливаем godoc сервер..."
+	@PID=$(lsof -t -i:${DOC_PORT}); \
+	if [ -n "$$PID" ]; then \
+		kill $$PID || echo "Не удалось остановить godoc"; \
+	else \
+		echo "godoc не запущен на порту ${DOC_PORT}"; \
+	fi
+	@echo "HTML-документация сохранена в ${DOC_DIR}/"

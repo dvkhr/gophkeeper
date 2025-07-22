@@ -27,3 +27,10 @@ type DataRecord struct {
 	UpdatedAt     int64
 	Deleted       bool
 }
+
+// Repository — общий интерфейс для всех репозиториев
+type Repository interface {
+	UserRepository
+	DataRepository
+	TokenRepository
+}

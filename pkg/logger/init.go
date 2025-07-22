@@ -104,3 +104,12 @@ func InitTestLogger() error {
 	})
 	return err
 }
+
+// NewTestLogger создаёт новый логгер для тестов
+func NewTestLogger() *Logger {
+	return &Logger{
+		logger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})),
+	}
+}

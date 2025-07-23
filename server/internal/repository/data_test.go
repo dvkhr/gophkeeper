@@ -1,5 +1,3 @@
-// pkg/repository/data_test.go
-
 package repository
 
 import (

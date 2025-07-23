@@ -21,6 +21,9 @@ service KeeperService {
 
   // StoreData сохраняет новую запись на сервере
   rpc StoreData (StoreDataRequest) returns (StatusResponse);
+  
+  // DeleteData удаляет запись (помечает как удалённую)
+  rpc DeleteData(DeleteDataRequest) returns (StatusResponse);
 }
 
 // RegisterRequest содержит данные для регистрации нового пользователя
@@ -79,4 +82,9 @@ message StoreDataRequest {
 message StatusResponse {
   bool success = 1;                  // Успешно ли выполнено
   string message = 2;                // Сообщение с результатом
+}
+
+// Запрос на удаление данных
+message DeleteDataRequest {
+  string id = 1; // Идентификатор записи
 }

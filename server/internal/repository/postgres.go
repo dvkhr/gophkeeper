@@ -52,3 +52,11 @@ func (r *PostgresRepository) IsRefreshTokenRevoked(token string) (bool, error) {
 func (r *PostgresRepository) RevokeRefreshToken(token string) error {
 	return r.tokenRepo.RevokeRefreshToken(token)
 }
+
+func (r *PostgresRepository) DataExistsForUser(id string, userID string) (bool, error) {
+	return r.dataRepo.DataExistsForUser(id, userID)
+}
+
+func (r *PostgresRepository) MarkDataAsDeleted(id string) error {
+	return r.dataRepo.MarkDataAsDeleted(id)
+}

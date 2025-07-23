@@ -1,5 +1,3 @@
-// pkg/repository/token_test.go
-
 package repository
 
 import (

@@ -35,7 +35,6 @@ func TestApplyMigrations_Success(t *testing.T) {
 	err := db.ApplyMigrations(dbConn)
 	assert.NoError(t, err)
 
-	// Проверим, что таблицы созданы
 	var exists bool
 	err = dbConn.QueryRow("SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users')").Scan(&exists)
 	assert.NoError(t, err)

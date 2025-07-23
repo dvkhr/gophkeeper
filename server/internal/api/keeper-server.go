@@ -120,17 +120,128 @@ func (s *KeeperServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Aut
 	}, nil
 }
 
+// StoreData сохраняет зашифрованные данные пользователя в системе.
+// Проверяет, что пользователь авторизован (userID в контексте).
+// Проверяет, что запись и её ID не пустые.
+// Сохраняет или обновляет данные через репозиторий.
 func (s *KeeperServer) StoreData(ctx context.Context, req *pb.StoreDataRequest) (*pb.StatusResponse, error) {
-	logger.Logg.Info("Storing data: %v", req.Record.Type)
-	return &pb.StatusResponse{Success: true, Message: "Stored"}, nil
+	userID, ok := auth.GetUserID(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+	}
+
+	if req.Record == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Record is required")
+	}
+
+	if req.Record.Id == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "Record ID is required")
+	}
+
+	logger.Logg.Info("Storing data", "type", req.Record.Type, "user", userID)
+
+	err := s.repo.SaveData(userID, req.Record)
+	if err != nil {
+		logger.Logg.Error("Failed to store data", "error", err)
+		return nil, status.Errorf(codes.Internal, "Failed to save data")
+	}
+
+	return &pb.StatusResponse{
+		Success: true,
+		Message: "Data stored successfully",
+	}, nil
 }
 
+// GetData возвращает все неудалённые данные пользователя.
+// Проверяет, что пользователь авторизован (userID в контексте).
+// Загружает все записи из БД через репозиторий.
 func (s *KeeperServer) GetData(ctx context.Context, req *pb.GetDataRequest) (*pb.DataResponse, error) {
-	logger.Logg.Info("Get data by type: %v", req.Type)
-	return &pb.DataResponse{}, nil
+	userID, ok := auth.GetUserID(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+	}
+
+	logger.Logg.Info("Getting all data", "user", userID)
+
+	records, err := s.repo.GetAllData(userID)
+	if err != nil {
+		logger.Logg.Error("Failed to get data", "error", err)
+		return nil, status.Errorf(codes.Internal, "Failed to retrieve data")
+	}
+
+	return &pb.DataResponse{
+		Records: records,
+	}, nil
 }
 
+// SyncData синхронизирует клиентские данные с сервером.
+// Проверяет, что пользователь авторизован (userID в контексте).
+// Сохраняет все записи.
+// Возвращает все неудаленные данные с сервера.
 func (s *KeeperServer) SyncData(ctx context.Context, req *pb.SyncRequest) (*pb.SyncResponse, error) {
-	logger.Logg.Info("Syncing %d records", len(req.Records))
-	return &pb.SyncResponse{}, nil
+	userID, ok := auth.GetUserID(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+	}
+
+	logger.Logg.Info("Syncing data", "count", len(req.Records), "user", userID)
+
+	// сохраняем
+	for _, record := range req.Records {
+		if record == nil || record.Id == "" {
+			continue // пропускаем невалидные
+		}
+		if err := s.repo.SaveData(userID, record); err != nil {
+			logger.Logg.Error("Failed to sync record", "id", record.Id, "error", err)
+		}
+	}
+
+	// получаем с сервера
+	remoteRecords, err := s.repo.GetAllData(userID)
+	if err != nil {
+		logger.Logg.Error("Failed to fetch remote data", "error", err)
+		return nil, status.Errorf(codes.Internal, "Failed to retrieve remote data")
+	}
+
+	return &pb.SyncResponse{
+		Records: remoteRecords,
+	}, nil
+}
+
+// DeleteData помечает запись как удалённую (soft delete).
+// Проверяет, что пользователь авторизован.
+// Проверяет, что запись существует и принадлежит пользователю.
+// Устанавливает флаг "deleted = true" в БД.
+func (s *KeeperServer) DeleteData(ctx context.Context, req *pb.DeleteDataRequest) (*pb.StatusResponse, error) {
+	userID, ok := auth.GetUserID(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+	}
+
+	logger.Logg.Info("Deleting data", "record_id", req.Id, "user", userID)
+
+	if req.Id == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "Record ID is required")
+	}
+
+	// Проверяем, существует ли запись и принадлежит ли пользователю
+	exists, err := s.repo.DataExistsForUser(req.Id, userID)
+	if err != nil {
+		logger.Logg.Error("Failed to check data ownership", "error", err)
+		return nil, status.Errorf(codes.Internal, "Failed to verify data ownership")
+	}
+	if !exists {
+		return nil, status.Errorf(codes.NotFound, "Data not found or access denied")
+	}
+
+	err = s.repo.MarkDataAsDeleted(req.Id)
+	if err != nil {
+		logger.Logg.Error("Failed to delete data", "error", err)
+		return nil, status.Errorf(codes.Internal, "Failed to delete data")
+	}
+
+	return &pb.StatusResponse{
+		Success: true,
+		Message: "Data deleted successfully",
+	}, nil
 }

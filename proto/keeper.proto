@@ -47,7 +47,7 @@ message AuthResponse {
 // DataRecord представляет одну запись данных пользователя
 message DataRecord {
   string id = 1;                     // Уникальный идентификатор записи
-  string type = 2;                   // Тип данных: loginpass, text, binary, card, otp
+  string type = 2;                   // Тип данных: loginpass, text, binary, card
   bytes encrypted_data = 3;          // Зашифрованное содержимое данных
   map<string, string> metadata = 4;  // Метаданные (например: сайт, банк, личность)
   int64 timestamp = 5;               // Время последнего изменения (Unix timestamp)
@@ -65,7 +65,7 @@ message SyncResponse {
 
 // GetDataRequest запрашивает данные определённого типа
 message GetDataRequest {
-  string type = 1;                   // Тип данных: loginpass, text, binary, card, otp
+  string type = 1;                   // Тип данных: loginpass, text, binary, card
 }
 
 // DataResponse возвращает список данных заданного типа

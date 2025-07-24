@@ -10,7 +10,7 @@ import (
 const (
 	SaltSize = 32
 	Iter     = 10000
-	KeyLen   = 32 // AES-256
+	KeyLen   = 32
 )
 
 // DeriveKey генерирует ключ из пароля и соли

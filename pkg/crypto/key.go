@@ -8,17 +8,23 @@ import (
 )
 
 const (
-	SaltSize = 32
-	Iter     = 10000
-	KeyLen   = 32
+	SaltSize   = 32    // длина соли
+	Iterations = 10000 //количество итераций
+	KeyLength  = 32    //длина ключа
 )
 
-// DeriveKey генерирует ключ из пароля и соли
+// DeriveKey генерирует ключ из пароля и соли с помощью PBKDF2
 func DeriveKey(password string, salt []byte) []byte {
-	return pbkdf2.Key([]byte(password), salt, Iter, KeyLen, sha256.New)
+	return pbkdf2.Key(
+		[]byte(password), // пароль
+		salt,             // соль
+		Iterations,       // количество итераций
+		KeyLength,        // длина ключа
+		sha256.New,       // хэш-функция
+	)
 }
 
-// GenerateSalt генерирует случайную соль
+// GenerateSalt генерирует случайную соль длиной SaltSize
 func GenerateSalt() ([]byte, error) {
 	salt := make([]byte, SaltSize)
 	_, err := rand.Read(salt)

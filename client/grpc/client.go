@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/dvkhr/gophkeeper/pb"
+	"github.com/dvkhr/gophkeeper/pkg/crypto"
+	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -15,19 +17,27 @@ type Client struct {
 	conn    *grpc.ClientConn
 	service pb.KeeperServiceClient
 	token   string
+	crypto  *crypto.Encryptor
 }
 
 // New создаёт новый gRPC-клиент.
 // address — адрес сервера, например "localhost:8080"
-func New(address string) (*Client, error) {
+func New(address string, encryptionKey []byte) (*Client, error) {
 	clientConn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("не удалось подключиться к серверу: %w", err)
 	}
 
+	encryptor, err := crypto.NewEncryptor(encryptionKey)
+	if err != nil {
+		clientConn.Close()
+		return nil, fmt.Errorf("неверный ключ шифрования: %w", err)
+	}
+
 	return &Client{
 		conn:    clientConn,
 		service: pb.NewKeeperServiceClient(clientConn),
+		crypto:  encryptor,
 	}, nil
 }
 
@@ -72,8 +82,21 @@ func (c *Client) Login(login string, encryptedPassword []byte) (*pb.AuthResponse
 
 // StoreData сохраняет запись.
 func (c *Client) StoreData(record *pb.DataRecord) (*pb.StatusResponse, error) {
+	encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка шифрования: %w", err)
+	}
+
+	encryptedRecord := &pb.DataRecord{
+		Id:            record.Id,
+		Type:          record.Type,
+		EncryptedData: encryptedData,
+		Metadata:      record.Metadata,
+		Timestamp:     record.Timestamp,
+	}
+
 	ctx := c.authContext()
-	resp, err := c.service.StoreData(ctx, &pb.StoreDataRequest{Record: record})
+	resp, err := c.service.StoreData(ctx, &pb.StoreDataRequest{Record: encryptedRecord})
 	if err != nil {
 		return nil, err
 	}
@@ -87,18 +110,53 @@ func (c *Client) GetData() (*pb.DataResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for _, record := range resp.Records {
+		plaintext, err := c.crypto.Decrypt(record.EncryptedData)
+		if err != nil {
+			logger.Logg.Warn("ошибка расшифрования записи ", record.Id)
+			continue
+		}
+		record.EncryptedData = plaintext
+	}
+
 	return resp, nil
 }
 
 // SyncData синхронизирует данные.
 func (c *Client) SyncData(records []*pb.DataRecord) (*pb.SyncResponse, error) {
+	var encryptedRecords []*pb.DataRecord
+	for _, record := range records {
+		encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка шифрования записи %s: %w", record.Id, err)
+		}
+
+		encryptedRecords = append(encryptedRecords, &pb.DataRecord{
+			Id:            record.Id,
+			Type:          record.Type,
+			EncryptedData: encryptedData,
+			Metadata:      record.Metadata,
+			Timestamp:     record.Timestamp,
+		})
+	}
+
 	ctx := c.authContext()
-	req := &pb.SyncRequest{Records: records}
-	resp, err := c.service.SyncData(ctx, req)
+	req := &pb.SyncRequest{Records: encryptedRecords}
+	syncResp, err := c.service.SyncData(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return resp, nil
+
+	for _, record := range syncResp.Records {
+		plaintext, err := c.crypto.Decrypt(record.EncryptedData)
+		if err != nil {
+			continue
+		}
+		record.EncryptedData = plaintext
+	}
+
+	return syncResp, nil
 }
 
 // DeleteData удаляет запись по ID.

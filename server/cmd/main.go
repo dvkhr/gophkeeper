@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -76,7 +77,9 @@ func main() {
 
 	logger.Logg.Info("Server is running...")
 
-	// Ожидание завершения
-	<-context.Background().Done()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
 	logger.Logg.Info("Shutting down server...")
+	grpcServer.GracefulStop()
 }

@@ -37,7 +37,7 @@ test-integration:
 	go test ${TEST_FLAGS} ./tests/integration/...
 
 cover:
-	go test -race -coverprofile=${COVER_PROFILE} -covermode=atomic ${TEST_PKG}
+	go test -p 1 -race -coverprofile=${COVER_PROFILE} -covermode=atomic ${TEST_PKG}
 	go tool cover -html=${COVER_PROFILE} -o ${COVER_HTML}
 	@echo "Отчёт о покрытии сохранён в ${COVER_HTML}"
 

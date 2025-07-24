@@ -1,3 +1,12 @@
+// Package grpc предоставляет gRPC-клиент для взаимодействия с сервером GophKeeper.
+//
+// Клиент отвечает за:
+//   - Установление безопасного соединения с сервером.
+//   - Шифрование и расшифровку данных с использованием AES-GCM.
+//   - Аутентификацию через JWT-токены.
+//   - Сохранение сессии (токенов и соли) в локальном хранилище.
+//
+// Все данные шифруются на клиенте, сервер хранит только зашифрованные данные.
 package grpc
 
 import (
@@ -21,8 +30,8 @@ type Client struct {
 	crypto  *crypto.Encryptor
 }
 
-// New создаёт новый gRPC-клиент.
-// address — адрес сервера, например "localhost:8080"
+// New создаёт новый gRPC-клиент и устанавливает соединение с сервером.
+// address — адрес сервера, например "localhost:50051"
 func New(address string, encryptionKey []byte) (*Client, error) {
 	clientConn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -42,12 +51,12 @@ func New(address string, encryptionKey []byte) (*Client, error) {
 	}, nil
 }
 
-// Close закрывает соединение с сервером.
+// Close закрывает соединение с gRPC-сервером.
 func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// Register регистрирует нового пользователя.
+// Register регистрирует нового пользователя на сервере.
 func (c *Client) Register(login string, encryptedPassword []byte) (*pb.AuthResponse, error) {
 	req := &pb.RegisterRequest{
 		Login:             login,
@@ -64,7 +73,7 @@ func (c *Client) Register(login string, encryptedPassword []byte) (*pb.AuthRespo
 	return resp, nil
 }
 
-// Login выполняет вход пользователя.
+// Login выполняет вход существующего пользователя.
 func (c *Client) Login(login string, encryptedPassword []byte) (*pb.AuthResponse, error) {
 	req := &pb.LoginRequest{
 		Login:             login,
@@ -81,7 +90,7 @@ func (c *Client) Login(login string, encryptedPassword []byte) (*pb.AuthResponse
 	return resp, nil
 }
 
-// StoreData сохраняет запись.
+// StoreData сохраняет одну запись в хранилище.
 func (c *Client) StoreData(record *pb.DataRecord) (*pb.StatusResponse, error) {
 	encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
 	if err != nil {
@@ -104,7 +113,7 @@ func (c *Client) StoreData(record *pb.DataRecord) (*pb.StatusResponse, error) {
 	return resp, nil
 }
 
-// GetData получает все данные пользователя.
+// GetData запрашивает все неудалённые записи пользователя.
 func (c *Client) GetData() (*pb.DataResponse, error) {
 	ctx := c.authContext()
 	resp, err := c.service.GetData(ctx, &pb.GetDataRequest{})
@@ -124,7 +133,7 @@ func (c *Client) GetData() (*pb.DataResponse, error) {
 	return resp, nil
 }
 
-// SyncData синхронизирует данные.
+// SyncData синхронизирует список записей с сервером.
 func (c *Client) SyncData(records []*pb.DataRecord) (*pb.SyncResponse, error) {
 	var encryptedRecords []*pb.DataRecord
 	for _, record := range records {
@@ -171,7 +180,8 @@ func (c *Client) DeleteData(id string) (*pb.StatusResponse, error) {
 	return resp, nil
 }
 
-// authContext возвращает контекст с заголовком авторизации.
+// authContext возвращает контекст с заголовком авторизации (Bearer token).
+// Если токен не установлен, возвращается пустой контекст.
 func (c *Client) authContext() context.Context {
 	if c.token == "" {
 		return context.Background()

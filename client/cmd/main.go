@@ -2,26 +2,37 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"time"
 
-	"github.com/dvkhr/gophkeeper/pkg/logger"
+	"github.com/urfave/cli/v2"
+)
+
+var (
+	Version   = "dev"
+	BuildDate = "unknown"
 )
 
 func main() {
-	// Инициализируем логгер
-	if err := logger.InitLogger("/home/max/go/src/GophKeeper/configs/logger.yaml"); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+	app := &cli.App{
+		Name:    "gophkeeper",
+		Usage:   "Клиент для безопасного хранения данных",
+		Version: fmt.Sprintf("%s (сборка: %s)", Version, BuildDate),
+		Compiled: func() time.Time {
+			if BuildDate == "unknown" {
+				return time.Time{}
+			}
+			t, _ := time.Parse("2006-01-02T15:04:05Z", BuildDate)
+			return t
+		}(),
+		Commands: []*cli.Command{
+			NewVersionCommand(),
+			NewRegisterCommand(),
+		},
 	}
 
-	// Тестовые сообщения
-	logger.Logg.Info("Application started")
-	logger.Logg.Debug("This is a debug message")
-	logger.Logg.Warn("This is a warning message")
-	logger.Logg.Error("This is an error message")
-
-	// Пример маскировки чувствительных данных
-	jsonData := `{"username": "admin", "password": "secret123"}`
-	masked := logger.MaskSensitiveData(jsonData)
-	logger.Logg.Info("Masked data", "data", masked)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -180,8 +181,12 @@ func (c *Client) authContext() context.Context {
 }
 
 // SetToken устанавливает токен.
-func (c *Client) SetToken(token string) {
-	c.token = token
+func (c *Client) SetToken(accessToken, refreshToken string) error {
+	c.token = accessToken
+	return file.Save(&file.Data{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 // GetToken возвращает текущий токен.

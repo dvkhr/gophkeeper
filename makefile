@@ -15,12 +15,22 @@ COVER_HTML=coverage.html
 DOC_DIR=docs
 DOC_PORT=6060
 
+# Версия
+VERSION=$(shell git describe --tags --always 2>/dev/null || echo "dev")
+BUILDDATE=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+
+
 all: build
 
 build: generate
 	mkdir -p build
-	go build -o ${BINARY_CLIENT} ./client/cmd
+	go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILDDATE}" \
+		-o ${BINARY_CLIENT} ./client/cmd
 	go build -o ${BINARY_SERVER} ./server/cmd
+	@echo "Сборка завершена:"
+	@echo "  Клиент: ${BINARY_CLIENT}"
+	@echo "  Сервер: ${BINARY_SERVER}"
+	@echo "  Версия: ${VERSION}, Сборка: ${BUILDDATE}"
 
 clean:
 	rm -rf build/*
@@ -40,6 +50,14 @@ cover:
 	go test -p 1 -race -coverprofile=${COVER_PROFILE} -covermode=atomic ${TEST_PKG}
 	go tool cover -html=${COVER_PROFILE} -o ${COVER_HTML}
 	@echo "Отчёт о покрытии сохранён в ${COVER_HTML}"
+
+# Сборка клиента для всех платформ
+build-client-all:
+	@echo "Сборка клиента для всех платформ..."
+	GOOS=linux   GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILDDATE}" -o build/gophkeeper-client-linux-amd64 ./client/cmd
+	GOOS=darwin  GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILDDATE}" -o build/gophkeeper-client-darwin-amd64 ./client/cmd
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILDDATE}" -o build/gophkeeper-client-windows-amd64.exe ./client/cmd
+	@echo "Клиент собран для Linux, macOS, Windows (amd64)."
 
 run-server:
 	./${BINARY_SERVER}

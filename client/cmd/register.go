@@ -7,57 +7,41 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewRegisterCommand() *cli.Command {
+// NewRegisterCommand создаёт команду register
+func NewRegisterCommand(serverAddress string) *cli.Command {
 	return &cli.Command{
 		Name:  "register",
 		Usage: "Зарегистрировать нового пользователя",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "login",
-				Aliases:  []string{"l"},
-				Usage:    "Логин пользователя",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "password",
-				Aliases:  []string{"p"},
-				Usage:    "Мастер-пароль",
-				Required: true,
-			},
+			&cli.StringFlag{Name: "login", Aliases: []string{"l"}, Required: true},
+			&cli.StringFlag{Name: "password", Aliases: []string{"p"}, Required: true},
 		},
 		Action: func(cCtx *cli.Context) error {
 			login := cCtx.String("login")
 			masterPassword := cCtx.String("password")
 
-			// Генерируем соль
 			salt, err := crypto.GenerateSalt()
 			if err != nil {
 				return err
 			}
 
-			// Сохраняем соль
-			session := &file.Data{Salt: salt}
-			if err := file.Save(session); err != nil {
+			if err := file.Save(&file.Data{Salt: salt}); err != nil {
 				return err
 			}
 
-			// Генерируем ключ
 			key := crypto.DeriveKey(masterPassword, salt)
 
-			// Создаём клиент
-			client, err := grpc.New("localhost:50051", key)
+			client, err := grpc.New(serverAddress, key)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			// Регистрация
 			resp, err := client.Register(login, []byte(masterPassword))
 			if err != nil {
 				return err
 			}
 
-			// Сохраняем токены
 			return client.SetToken(resp.AccessToken, resp.RefreshToken)
 		},
 	}

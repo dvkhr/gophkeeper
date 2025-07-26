@@ -22,6 +22,10 @@ type TokenRepository interface {
 	// RevokeRefreshToken отмечает refresh-токен как отозванный.
 	// Возвращает ошибку, если операция не удалась.
 	RevokeRefreshToken(token string) error
+
+	// GetUserIDByRefreshToken находит и возвращает идентификатор пользователя по значению refresh-токена.
+	// Возвращает ошибку sql.ErrNoRows, если токен не найден или отозван.
+	GetUserIDByRefreshToken(token string) (string, error)
 }
 
 // PostgresTokenRepository — реализация TokenRepository для PostgreSQL.
@@ -37,8 +41,8 @@ func NewTokenRepository(db *sql.DB) TokenRepository {
 // SaveRefreshToken сохраняет refresh-токен в базе данных.
 func (r *PostgresTokenRepository) SaveRefreshToken(token, userID string, expiresAt time.Time) error {
 	_, err := r.db.ExecContext(context.Background(),
-		`INSERT INTO refresh_tokens (token, user_id, expires_at)
-         VALUES ($1, $2, $3)`,
+		`INSERT INTO refresh_tokens (token, user_id, expires_at, revoked)
+         VALUES ($1, $2, $3, false)`,
 		token, userID, expiresAt)
 	if err != nil {
 		return fmt.Errorf("failed to save refresh token: %w", err)
@@ -49,13 +53,15 @@ func (r *PostgresTokenRepository) SaveRefreshToken(token, userID string, expires
 // IsRefreshTokenRevoked проверяет, был ли refresh-токен отозван.
 func (r *PostgresTokenRepository) IsRefreshTokenRevoked(token string) (bool, error) {
 	var revoked bool
-	err := r.db.QueryRowContext(context.Background(),
-		`SELECT revoked FROM refresh_tokens WHERE token = $1 AND revoked = true`, token).Scan(&revoked)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
+	err := r.db.QueryRow(`
+        SELECT revoked FROM refresh_tokens 
+        WHERE token = $1
+    `, token).Scan(&revoked)
 	if err != nil {
-		return true, fmt.Errorf("failed to check refresh token: %w", err)
+		if err == sql.ErrNoRows {
+			return true, nil
+		}
+		return true, err
 	}
 	return revoked, nil
 }
@@ -68,4 +74,14 @@ func (r *PostgresTokenRepository) RevokeRefreshToken(token string) error {
 		return fmt.Errorf("failed to revoke refresh token: %w", err)
 	}
 	return nil
+}
+
+// GetUserIDByRefreshToken находит и возвращает идентификатор пользователя по значению refresh-токена.
+func (r *PostgresTokenRepository) GetUserIDByRefreshToken(token string) (string, error) {
+	var userID string
+	err := r.db.QueryRow(`
+        SELECT user_id FROM refresh_tokens 
+        WHERE token = $1 AND revoked = false
+    `, token).Scan(&userID)
+	return userID, err
 }

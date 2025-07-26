@@ -70,7 +70,8 @@ func main() {
 		"port", cfg.Server.Port,
 		"mode", cfg.Server.Mode,
 		"dsn", cfg.Database.DSN,
-		"jwt_ttl", cfg.Auth.JWTTTLHours,
+		"jwt_ttl_Hours", cfg.Auth.JWTTTLHours,
+		"jwt_ttl_Minutes", cfg.Auth.JWTTTLMinutes,
 	)
 
 	go func() {

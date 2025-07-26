@@ -12,6 +12,7 @@ import (
 type AuthConfig struct {
 	JWTSecret           string `yaml:"jwt_secret"`
 	JWTTTLHours         int    `yaml:"jwt_ttl_hours"`
+	JWTTTLMinutes       int    `yaml:"jwt_ttl_minutes"`
 	RefreshTokenTTLDays int    `yaml:"refresh_token_ttl_days"`
 }
 

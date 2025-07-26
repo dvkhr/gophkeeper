@@ -13,6 +13,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/dvkhr/gophkeeper/pb"
@@ -245,5 +246,44 @@ func (s *KeeperServer) DeleteData(ctx context.Context, req *pb.DeleteDataRequest
 	return &pb.StatusResponse{
 		Success: true,
 		Message: "Data deleted successfully",
+	}, nil
+}
+
+func (s *KeeperServer) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.AuthResponse, error) {
+	revoked, err := s.repo.IsRefreshTokenRevoked(req.RefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to check token status")
+	}
+	if revoked {
+		return nil, status.Error(codes.Unauthenticated, "token revoked")
+	}
+
+	userID, err := s.repo.GetUserIDByRefreshToken(req.RefreshToken)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.Unauthenticated, "invalid refresh token")
+		}
+		return nil, status.Error(codes.Internal, "failed to get user ID")
+	}
+
+	newAccessToken, err := auth.GenerateToken(*s.cfg, userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate access token")
+	}
+
+	newRefreshToken, err := auth.GenerateRefreshToken(s.repo, userID, *s.cfg)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate refresh token")
+	}
+
+	err = s.repo.RevokeRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to revoke old token")
+	}
+
+	return &pb.AuthResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+		UserId:       userID,
 	}, nil
 }

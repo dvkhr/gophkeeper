@@ -5,6 +5,7 @@ package auth
 import (
 	"testing"
 
+	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/dvkhr/gophkeeper/server/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,10 +18,14 @@ type AuthTestSuite struct {
 }
 
 func (suite *AuthTestSuite) SetupTest() {
+	logger.Logg = logger.NewTestLogger()
+
 	suite.cfg = config.Config{
 		Auth: config.AuthConfig{
-			JWTSecret:   "test-secret",
-			JWTTTLHours: 1,
+			JWTSecret:           "test-secret",
+			JWTTTLHours:         1,
+			JWTTTLMinutes:       0,
+			RefreshTokenTTLDays: 7,
 		},
 	}
 }

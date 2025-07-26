@@ -18,8 +18,10 @@ import (
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Client — gRPC-клиент для GophKeeper.
@@ -202,4 +204,45 @@ func (c *Client) SetToken(accessToken, refreshToken string) error {
 // GetToken возвращает текущий токен.
 func (c *Client) GetToken() string {
 	return c.token
+}
+
+// Refresh обновляет пару токенов (access и refresh) на основе переданного refresh-токена.
+func (c *Client) Refresh() error {
+	session, err := file.Load()
+	if err != nil || session.RefreshToken == "" {
+		return fmt.Errorf("нет refresh_token")
+	}
+
+	req := &pb.RefreshRequest{
+		RefreshToken: session.RefreshToken,
+	}
+
+	resp, err := c.service.Refresh(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	c.token = resp.AccessToken
+	return c.SetToken(resp.AccessToken, resp.RefreshToken)
+}
+
+// DoWithRetry выполняет функцию с повторной попыткой при 401
+func (c *Client) DoWithRetry(fn func() error) error {
+	err := fn()
+	if err == nil {
+		return nil
+	}
+
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.Unauthenticated {
+		return err
+	}
+
+	logger.Logg.Info("Попытка обновить токен...")
+	if refreshErr := c.Refresh(); refreshErr != nil {
+		logger.Logg.Error("Не удалось обновить токен", "error", refreshErr)
+		return err
+	}
+
+	return fn()
 }

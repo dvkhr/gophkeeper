@@ -49,13 +49,16 @@ func NewAddCommand(serverAddress string) *cli.Command {
 				return err
 			}
 
-			resp, err := client.StoreData(record)
-			if err != nil {
-				return err
-			}
+			err = client.DoWithRetry(func() error {
+				resp, err := client.StoreData(record)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Данные сохранены: %s\n", resp.Message)
+				return nil
+			})
 
-			fmt.Printf("✅ Данные сохранены: %s\n", resp.Message)
-			return nil
+			return err
 		},
 	}
 }

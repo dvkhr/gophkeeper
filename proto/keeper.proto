@@ -24,6 +24,9 @@ service KeeperService {
   
   // DeleteData удаляет запись (помечает как удалённую)
   rpc DeleteData(DeleteDataRequest) returns (StatusResponse);
+
+  //Refresh обновляет токены 
+  rpc Refresh (RefreshRequest) returns (AuthResponse);
 }
 
 // RegisterRequest содержит данные для регистрации нового пользователя
@@ -88,4 +91,8 @@ message StatusResponse {
 // Запрос на удаление данных
 message DeleteDataRequest {
   string id = 1; // Идентификатор записи
+}
+
+message RefreshRequest {
+  string refresh_token = 1;  // Токен для обновления сессии
 }

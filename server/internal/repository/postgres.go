@@ -60,3 +60,7 @@ func (r *PostgresRepository) DataExistsForUser(id string, userID string) (bool, 
 func (r *PostgresRepository) MarkDataAsDeleted(id string) error {
 	return r.dataRepo.MarkDataAsDeleted(id)
 }
+
+func (r *PostgresRepository) GetUserIDByRefreshToken(token string) (string, error) {
+	return r.tokenRepo.GetUserIDByRefreshToken(token)
+}

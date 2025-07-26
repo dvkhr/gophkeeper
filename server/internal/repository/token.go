@@ -50,9 +50,9 @@ func (r *PostgresTokenRepository) SaveRefreshToken(token, userID string, expires
 func (r *PostgresTokenRepository) IsRefreshTokenRevoked(token string) (bool, error) {
 	var revoked bool
 	err := r.db.QueryRowContext(context.Background(),
-		`SELECT revoked FROM refresh_tokens WHERE token = $1`, token).Scan(&revoked)
+		`SELECT revoked FROM refresh_tokens WHERE token = $1 AND revoked = true`, token).Scan(&revoked)
 	if err == sql.ErrNoRows {
-		return true, nil // токен не найден → считаем отозванным
+		return false, nil
 	}
 	if err != nil {
 		return true, fmt.Errorf("failed to check refresh token: %w", err)

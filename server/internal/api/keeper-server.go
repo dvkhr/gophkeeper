@@ -76,10 +76,12 @@ func (s *KeeperServer) Register(ctx context.Context, req *pb.RegisterRequest) (*
 		logger.Logg.Error("Failed to generate access token", "error", err)
 		return nil, err
 	}
+	logger.Logg.Info("Register: user create", "user_id", userID, "login", req.Login)
 
 	return &pb.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		UserId:       userID,
 	}, nil
 }
 

@@ -42,6 +42,7 @@ message LoginRequest {
 message AuthResponse {
   string access_token = 1;           // JWT-токен доступа
   string refresh_token = 2;          // Refresh-токен
+  string user_id = 3;               // user_id
 }
 
 // DataRecord представляет одну запись данных пользователя

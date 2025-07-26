@@ -10,6 +10,7 @@ import (
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/dvkhr/gophkeeper/server/internal/api"
+	"github.com/dvkhr/gophkeeper/server/internal/auth"
 	"github.com/dvkhr/gophkeeper/server/internal/config"
 	"github.com/dvkhr/gophkeeper/server/internal/db"
 	"github.com/dvkhr/gophkeeper/server/internal/repository"
@@ -58,8 +59,12 @@ func main() {
 		logger.Logg.Error("Failed to listen", "error", err)
 		panic(err)
 	}
+	interceptor := auth.AuthInterceptor(*cfg, repo)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor),
+	)
+
 	pb.RegisterKeeperServiceServer(grpcServer, server)
 	logger.Logg.Info("Starting gRPC server",
 		"port", cfg.Server.Port,

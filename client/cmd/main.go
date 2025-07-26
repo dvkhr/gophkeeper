@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dvkhr/gophkeeper/client/cmd/commands"
 	"github.com/dvkhr/gophkeeper/client/internal/config"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/urfave/cli/v2"
@@ -51,15 +52,15 @@ func main() {
 			for i, cmd := range cCtx.App.Commands {
 				switch cmd.Name {
 				case "register":
-					cCtx.App.Commands[i] = NewRegisterCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewRegisterCommand(cfg.Server.Address)
 				case "add":
-					cCtx.App.Commands[i] = NewAddCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewAddCommand(cfg.Server.Address)
 					// case "login":
-					//   cCtx.App.Commands[i] = cmd.NewLoginCommand(cfg.Server.Address)
+					//   cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
 					// case "get":
-					//  cCtx.App.Commands[i] = cmd.NewGetCommand(cfg.Server.Address)
+					//  cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
 					// case "delete":
-					//  cCtx.App.Commands[i] = cmd.NewDeleteCommand(cfg.Server.Address)
+					//  cCtx.App.Commands[i] = commands.NewDeleteCommand(cfg.Server.Address)
 				}
 			}
 			return nil

@@ -11,7 +11,7 @@ $$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'data_type') THEN
-        CREATE TYPE data_type AS ENUM ('loginpass', 'text', 'binary', 'card', 'otp');
+        CREATE TYPE data_type AS ENUM ('loginpass', 'text', 'binary', 'card');
     END IF;
 END
 $$;

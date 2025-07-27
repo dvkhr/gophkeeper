@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/dvkhr/gophkeeper/client/session"
@@ -23,6 +24,7 @@ func NewAddCommand(serverAddress string) *cli.Command {
 			&cli.StringFlag{Name: "expiry"},
 			&cli.StringFlag{Name: "cvv"},
 			&cli.StringFlag{Name: "content"},
+			&cli.StringFlag{Name: "file", Usage: "Путь к файлу для загрузки"},
 			&cli.StringSliceFlag{Name: "meta", Aliases: []string{"m"}},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -69,6 +71,10 @@ func buildDataRecord(cCtx *cli.Context) (*pb.DataRecord, error) {
 		if cCtx.String("content") == "" {
 			return nil, fmt.Errorf("для text нужен --content")
 		}
+	case "binary":
+		if cCtx.String("file") == "" {
+			return nil, fmt.Errorf("для binary нужен --file")
+		}
 	default:
 		return nil, fmt.Errorf("неизвестный тип: %s", dataType)
 	}
@@ -83,14 +89,25 @@ func buildDataRecord(cCtx *cli.Context) (*pb.DataRecord, error) {
 		}
 	}
 
-	var data string
-	switch dataType {
-	case "loginpass":
-		data = fmt.Sprintf("login:%s\npassword:%s", cCtx.String("login"), cCtx.String("password"))
-	case "card":
-		data = fmt.Sprintf("number:%s\nexpiry:%s\ncvv:%s", cCtx.String("number"), cCtx.String("expiry"), cCtx.String("cvv"))
-	case "text":
-		data = cCtx.String("content")
+	var data []byte
+	var err error
+
+	if cCtx.String("file") != "" {
+		data, err = os.ReadFile(cCtx.String("file"))
+		if err != nil {
+			return nil, fmt.Errorf("не удалось прочитать файл: %w", err)
+		}
+	} else {
+		switch dataType {
+		case "loginpass":
+			data = []byte(fmt.Sprintf("login:%s\npassword:%s",
+				cCtx.String("login"), cCtx.String("password")))
+		case "card":
+			data = []byte(fmt.Sprintf("number:%s\nexpiry:%s\ncvv:%s",
+				cCtx.String("number"), cCtx.String("expiry"), cCtx.String("cvv")))
+		case "text":
+			data = []byte(cCtx.String("content"))
+		}
 	}
 
 	return &pb.DataRecord{

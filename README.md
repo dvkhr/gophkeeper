@@ -22,6 +22,7 @@ Refresh-токен с отзывом.
 ./build/gophkeeper-client add --id=card1 --type=card --number="1111 1111 1111 1111" --expiry="12/27" --cvv="123"
 Получение данных: ./build/gophkeeper-client get
 Удаление данных: ./build/gophkeeper-client delete --id=note1
+Загрузка бинарных данных: ./build/gophkeeper-client add --id=mycert --type=binary --file=./client.crt
 Вход: ./build/gophkeeper-client login --login vasia --password "mypass"
 Выход: ./build/gophkeeper-client logout
 Версия: ./build/gophkeeper-client version

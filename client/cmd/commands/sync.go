@@ -3,10 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/dvkhr/gophkeeper/client/grpc"
-	"github.com/dvkhr/gophkeeper/client/storage/file"
+	"github.com/dvkhr/gophkeeper/client/session"
 	"github.com/dvkhr/gophkeeper/pb"
-	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,25 +12,15 @@ import (
 func NewSyncCommand(serverAddress string) *cli.Command {
 	return &cli.Command{
 		Name:  "sync",
-		Usage: "Синхронизировать данные c сервером",
+		Usage: "Синхронизировать данные с сервером",
 		Action: func(cCtx *cli.Context) error {
-			session, err := file.Load()
-			if err != nil || session.AccessToken == "" {
-				return fmt.Errorf("вы не авторизованы")
-			}
-
-			masterPassword := "master-pass" // заменить!
-			key := crypto.DeriveKey(masterPassword, session.Salt)
-
-			client, err := grpc.New(serverAddress, key)
+			client, err := session.LoadAuthenticatedClient(serverAddress)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			client.SetToken(session.AccessToken, session.RefreshToken)
-
-			/// загрузка из локального хранилища?
+			// Локальное хранилище???
 			var records []*pb.DataRecord
 
 			err = client.DoWithRetry(func() error {
@@ -50,7 +38,7 @@ func NewSyncCommand(serverAddress string) *cli.Command {
 				for _, record := range resp.Records {
 					fmt.Printf("  - ID: %s, Тип: %s\n", record.Id, record.Type)
 				}
-				// сохранение в локальное хранилище?
+
 				return nil
 			})
 

@@ -23,14 +23,8 @@ func NewLoginCommand(serverAddress string) *cli.Command {
 			login := cCtx.String("login")
 			password := cCtx.String("password")
 
-			salt, err := crypto.GenerateSalt()
-			if err != nil {
-				return err
-			}
-
-			key := crypto.DeriveKey(password, salt)
-
-			client, err := grpc.New(serverAddress, key)
+			tempKey := crypto.DeriveKey(password, []byte("temp-salt"))
+			client, err := grpc.New(serverAddress, tempKey)
 			if err != nil {
 				return err
 			}
@@ -41,11 +35,13 @@ func NewLoginCommand(serverAddress string) *cli.Command {
 				return err
 			}
 
-			session := &file.Data{
-				Salt:         salt,
-				AccessToken:  resp.AccessToken,
-				RefreshToken: resp.RefreshToken,
+			session, err := file.Load()
+			if err != nil {
+				return fmt.Errorf("не удалось загрузить сессию: %w", err)
 			}
+
+			session.AccessToken = resp.AccessToken
+			session.RefreshToken = resp.RefreshToken
 
 			if err := file.Save(session); err != nil {
 				return fmt.Errorf("не удалось сохранить сессию: %w", err)

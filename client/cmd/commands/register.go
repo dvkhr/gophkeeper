@@ -32,14 +32,10 @@ func NewRegisterCommand(serverAddress string) *cli.Command {
 			}
 			logger.Logg.Debug("Соль сгенерирована", "length", len(salt))
 
-			if err := file.Save(&file.Data{Salt: salt}); err != nil {
-				logger.Logg.Error("Не удалось сохранить соль", "error", err)
-				return err
-			}
-			logger.Logg.Debug("Соль сохранена в локальное хранилище")
-
 			key := crypto.DeriveKey(masterPassword, salt)
 			logger.Logg.Debug("Ключ шифрования сгенерирован", "key_length", len(key))
+
+			masterKeyHash := crypto.SHA256(key)
 
 			client, err := grpc.New(serverAddress, key)
 			if err != nil {
@@ -56,11 +52,18 @@ func NewRegisterCommand(serverAddress string) *cli.Command {
 			}
 			logger.Logg.Debug("Регистрация успешна", "user_id", resp.UserId)
 
-			if err := client.SetToken(resp.AccessToken, resp.RefreshToken); err != nil {
-				logger.Logg.Error("Не удалось сохранить токены", "error", err)
+			session := &file.Data{
+				Salt:          salt,
+				MasterKeyHash: masterKeyHash,
+				AccessToken:   resp.AccessToken,
+				RefreshToken:  resp.RefreshToken,
+			}
+
+			if err := file.Save(session); err != nil {
+				logger.Logg.Error("Не удалось сохранить сессию", "error", err)
 				return fmt.Errorf("регистрация успешна, но не удалось сохранить сессию: %w", err)
 			}
-			logger.Logg.Debug("Токены сохранены в локальном хранилище")
+			logger.Logg.Debug("Полная сессия сохранена: salt, masterKeyHash, токены")
 
 			fmt.Printf("Пользователь %s успешно зарегистрирован и авторизован\n", login)
 			return nil

@@ -192,13 +192,19 @@ func (c *Client) authContext() context.Context {
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+c.token))
 }
 
-// SetToken устанавливает токен.
+// SetToken устанавливает токен, не затрагивая другие данные.
 func (c *Client) SetToken(accessToken, refreshToken string) error {
 	c.token = accessToken
-	return file.Save(&file.Data{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	})
+
+	session, err := file.Load()
+	if err != nil {
+		return fmt.Errorf("не удалось загрузить сессию: %w", err)
+	}
+
+	session.AccessToken = accessToken
+	session.RefreshToken = refreshToken
+
+	return file.Save(session)
 }
 
 // GetToken возвращает текущий токен.

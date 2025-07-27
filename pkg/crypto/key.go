@@ -33,3 +33,9 @@ func GenerateSalt() ([]byte, error) {
 	}
 	return salt, nil
 }
+
+// SHA256 возвращает хеш SHA-256 от входных данных
+func SHA256(data []byte) []byte {
+	hash := sha256.Sum256(data)
+	return hash[:]
+}

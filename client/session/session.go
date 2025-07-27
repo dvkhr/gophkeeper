@@ -1,9 +1,11 @@
 package session
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/dvkhr/gophkeeper/client/grpc"
+	"github.com/dvkhr/gophkeeper/client/internal/utils"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 )
@@ -69,3 +71,42 @@ func (m *Manager) NewClientWithPassword(masterPassword string) (*grpc.Client, er
 
 	return client, nil
 }
+
+// LoadAuthenticatedClient загружает сессию, запрашивает мастер-пароль,
+// проверяет его корректность и возвращает готовый к использованию gRPC-клиент.
+func LoadAuthenticatedClient(serverAddress string) (*grpc.Client, error) {
+	session, err := file.Load()
+	if err != nil || session.AccessToken == "" {
+		return nil, errUnauthorized
+	}
+
+	masterPassword, err := utils.ReadMasterPassword("Master-пароль: ")
+	if err != nil {
+		return nil, err
+	}
+	defer utils.ZeroBytes(masterPassword)
+
+	inputKey := crypto.DeriveKey(string(masterPassword), session.Salt)
+	inputKeyHash := crypto.SHA256(inputKey)
+
+	if !bytes.Equal(inputKeyHash, session.MasterKeyHash) {
+		utils.ZeroBytes(masterPassword)
+		return nil, errInvalidMasterPassword
+	}
+
+	client, err := grpc.New(serverAddress, inputKey)
+	if err != nil {
+		utils.ZeroBytes(masterPassword)
+		return nil, err
+	}
+
+	client.SetToken(session.AccessToken, session.RefreshToken)
+
+	return client, nil
+}
+
+// Ошибки
+var (
+	errUnauthorized          = fmt.Errorf("вы не авторизованы")
+	errInvalidMasterPassword = fmt.Errorf("неверный мастер-пароль — данные не могут быть зашифрованы")
+)

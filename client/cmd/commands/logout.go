@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dvkhr/gophkeeper/client/grpc"
+	"github.com/dvkhr/gophkeeper/client/internal/utils"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -21,8 +22,13 @@ func NewLogoutCommand(serverAddress string) *cli.Command {
 				return fmt.Errorf("вы не авторизованы")
 			}
 
-			masterPassword := "master-pass" //заменить!!!
-			key := crypto.DeriveKey(masterPassword, session.Salt)
+			masterPassword, err := utils.ReadMasterPassword("Master-пароль: ")
+			if err != nil {
+				return fmt.Errorf("не удалось считать пароль: %w", err)
+			}
+			defer utils.ZeroBytes(masterPassword)
+
+			key := crypto.DeriveKey(string(masterPassword), session.Salt)
 
 			client, err := grpc.New(serverAddress, key)
 			if err != nil {
@@ -37,11 +43,6 @@ func NewLogoutCommand(serverAddress string) *cli.Command {
 				logger.Logg.Warn("Не удалось отозвать refresh_token на сервере", "error", err)
 			} else {
 				logger.Logg.Info("refresh_token отозван на сервере")
-			}
-
-			err = file.Delete()
-			if err != nil {
-				return fmt.Errorf("не удалось удалить сессию: %w", err)
 			}
 
 			fmt.Println("Вы вышли из аккаунта")

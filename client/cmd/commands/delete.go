@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dvkhr/gophkeeper/client/grpc"
+	"github.com/dvkhr/gophkeeper/client/internal/utils"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/urfave/cli/v2"
@@ -30,8 +31,13 @@ func NewDeleteCommand(serverAddress string) *cli.Command {
 				return fmt.Errorf("вы не авторизованы")
 			}
 
-			masterPassword := "master-pass" // заменить!!!
-			key := crypto.DeriveKey(masterPassword, session.Salt)
+			masterPassword, err := utils.ReadMasterPassword("Master-пароль: ")
+			if err != nil {
+				return fmt.Errorf("не удалось считать пароль: %w", err)
+			}
+			defer utils.ZeroBytes(masterPassword)
+
+			key := crypto.DeriveKey(string(masterPassword), session.Salt)
 
 			client, err := grpc.New(serverAddress, key)
 			if err != nil {

@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dvkhr/gophkeeper/client/grpc"
-	"github.com/dvkhr/gophkeeper/client/storage/file"
-	"github.com/dvkhr/gophkeeper/pkg/crypto"
+	"github.com/dvkhr/gophkeeper/client/session"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,21 +14,11 @@ func NewGetCommand(serverAddress string) *cli.Command {
 		Name:  "get",
 		Usage: "Получить все сохранённые данные",
 		Action: func(cCtx *cli.Context) error {
-			session, err := file.Load()
-			if err != nil || session.AccessToken == "" {
-				return fmt.Errorf("вы не авторизованы")
-			}
-
-			masterPassword := "master-pass" // заменить!!!
-			key := crypto.DeriveKey(masterPassword, session.Salt)
-
-			client, err := grpc.New(serverAddress, key)
+			client, err := session.LoadAuthenticatedClient(serverAddress)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
-
-			client.SetToken(session.AccessToken, session.RefreshToken)
 
 			resp, err := client.GetData()
 			if err != nil {
@@ -49,13 +37,9 @@ func NewGetCommand(serverAddress string) *cli.Command {
 				if i > 0 {
 					fmt.Println(strings.Repeat("─", 80))
 				}
-
 				fmt.Printf("ID:       %s\n", record.Id)
 				fmt.Printf("Тип:      %s\n", record.Type)
-
-				data := string(record.EncryptedData)
-				fmt.Printf("Данные:   %s\n", data)
-
+				fmt.Printf("Данные:   %s\n", record.EncryptedData)
 				if len(record.Metadata) > 0 {
 					fmt.Println("Метаданные:")
 					for k, v := range record.Metadata {

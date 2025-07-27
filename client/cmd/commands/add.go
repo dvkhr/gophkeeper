@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dvkhr/gophkeeper/client/grpc"
-	"github.com/dvkhr/gophkeeper/client/storage/file"
+	"github.com/dvkhr/gophkeeper/client/session"
 	"github.com/dvkhr/gophkeeper/pb"
-	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,21 +26,11 @@ func NewAddCommand(serverAddress string) *cli.Command {
 			&cli.StringSliceFlag{Name: "meta", Aliases: []string{"m"}},
 		},
 		Action: func(cCtx *cli.Context) error {
-			session, err := file.Load()
-			if err != nil || session.AccessToken == "" {
-				return fmt.Errorf("вы не авторизованы")
-			}
-
-			masterPassword := "master-pass-placeholder" // заменим позже
-			key := crypto.DeriveKey(masterPassword, session.Salt)
-
-			client, err := grpc.New(serverAddress, key)
+			client, err := session.LoadAuthenticatedClient(serverAddress)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
-
-			client.SetToken(session.AccessToken, session.RefreshToken)
 
 			record, err := buildDataRecord(cCtx)
 			if err != nil {

@@ -287,3 +287,12 @@ func (s *KeeperServer) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb
 		UserId:       userID,
 	}, nil
 }
+
+// Logout отзывает refresh_token
+func (s *KeeperServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
+	err := s.repo.RevokeRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to revoke token")
+	}
+	return &pb.LogoutResponse{Success: true}, nil
+}

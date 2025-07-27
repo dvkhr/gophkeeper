@@ -246,3 +246,12 @@ func (c *Client) DoWithRetry(fn func() error) error {
 
 	return fn()
 }
+
+// Logout отзывает refresh_token на сервере
+func (c *Client) Logout(refreshToken string) error {
+	req := &pb.LogoutRequest{
+		RefreshToken: refreshToken,
+	}
+	_, err := c.service.Logout(context.Background(), req)
+	return err
+}

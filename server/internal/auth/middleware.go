@@ -26,7 +26,8 @@ func AuthInterceptor(cfg config.Config, repo repository.TokenRepository) grpc.Un
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if info.FullMethod == "/keeper.KeeperService/Login" ||
 			info.FullMethod == "/keeper.KeeperService/Register" ||
-			info.FullMethod == "/keeper.KeeperService/Refresh" {
+			info.FullMethod == "/keeper.KeeperService/Refresh" ||
+			info.FullMethod == "/keeper.KeeperService/Logout" {
 			return handler(ctx, req)
 		}
 

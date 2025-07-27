@@ -706,3 +706,31 @@ func TestRefresh_Success(t *testing.T) {
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 	assert.Contains(t, st.Message(), "token revoked")
 }
+
+// успешный выход
+func TestLogout_Success(t *testing.T) {
+	server := setupTestServer(t)
+
+	registerReq := &pb.RegisterRequest{
+		Login:             "testuser",
+		EncryptedPassword: []byte("secure-pass-123"),
+	}
+	registerResp, err := server.Register(context.Background(), registerReq)
+	require.NoError(t, err)
+	require.NotEmpty(t, registerResp.RefreshToken)
+
+	originalRefreshToken := registerResp.RefreshToken
+
+	logoutReq := &pb.LogoutRequest{
+		RefreshToken: originalRefreshToken,
+	}
+	logoutResp, err := server.Logout(context.Background(), logoutReq)
+	require.NoError(t, err)
+	require.NotNil(t, logoutResp)
+	assert.True(t, logoutResp.Success, "ожидался успех при выходе")
+
+	revoked, err := server.repo.IsRefreshTokenRevoked(originalRefreshToken)
+	require.NoError(t, err)
+	assert.True(t, revoked, "refresh_token должен быть отозван после Logout")
+
+}

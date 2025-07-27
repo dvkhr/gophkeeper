@@ -55,8 +55,10 @@ func main() {
 					cCtx.App.Commands[i] = commands.NewRegisterCommand(cfg.Server.Address)
 				case "add":
 					cCtx.App.Commands[i] = commands.NewAddCommand(cfg.Server.Address)
-					// case "login":
-					//   cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
+				case "login":
+					cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
+				case "logout":
+					cmd.Action = commands.NewLogoutCommand(cfg.Server.Address).Action
 					// case "get":
 					//  cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
 					// case "delete":
@@ -70,6 +72,7 @@ func main() {
 			{Name: "register"},
 			{Name: "add"},
 			{Name: "login"},
+			{Name: "logout"},
 			{Name: "get"},
 			{Name: "delete"},
 		},

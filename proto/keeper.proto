@@ -13,6 +13,10 @@ service KeeperService {
   // Login выполняет вход пользователя и выдачу токенов
   rpc Login (LoginRequest) returns (AuthResponse);
 
+  // Logout выполняет выход пользователя и отзыв токена
+    rpc Logout (LogoutRequest) returns (LogoutResponse);
+
+
   // SyncData синхронизирует данные между клиентом и сервером
   rpc SyncData (SyncRequest) returns (SyncResponse);
 
@@ -95,4 +99,12 @@ message DeleteDataRequest {
 
 message RefreshRequest {
   string refresh_token = 1;  // Токен для обновления сессии
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
 }

@@ -67,3 +67,14 @@ func Clear() error {
 	path := getPath()
 	return os.Remove(path)
 }
+
+// Delete удаляет файл сессии
+func Delete() error {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(configDir, ".gophkeeper.json")
+
+	return os.Remove(path)
+}

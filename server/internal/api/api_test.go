@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -661,4 +662,47 @@ func TestDeleteData_OtherUserRecord(t *testing.T) {
 	assert.Equal(t, codes.NotFound, st.Code())
 	assert.Contains(t, st.Message(), "Data not found or access denied")
 	assert.Nil(t, resp)
+}
+
+// успешное обновление токенов
+func TestRefresh_Success(t *testing.T) {
+	server := setupTestServer(t)
+
+	registerReq := &pb.RegisterRequest{
+		Login:             "testuser",
+		EncryptedPassword: []byte("secure-pass-123"),
+	}
+	registerResp, err := server.Register(context.Background(), registerReq)
+	require.NoError(t, err)
+	require.NotEmpty(t, registerResp.AccessToken)
+	require.NotEmpty(t, registerResp.RefreshToken)
+
+	originalRefreshToken := registerResp.RefreshToken
+	userID := registerResp.UserId
+
+	time.Sleep(1 * time.Second)
+
+	refreshReq := &pb.RefreshRequest{
+		RefreshToken: originalRefreshToken,
+	}
+	refreshResp, err := server.Refresh(context.Background(), refreshReq)
+	require.NoError(t, err)
+	require.NotEmpty(t, refreshResp.AccessToken)
+	require.NotEmpty(t, refreshResp.RefreshToken)
+	require.NotEqual(t, refreshResp.AccessToken, registerResp.AccessToken)
+	require.NotEqual(t, refreshResp.RefreshToken, originalRefreshToken)
+	require.Equal(t, refreshResp.UserId, userID)
+
+	revoked, err := server.repo.IsRefreshTokenRevoked(originalRefreshToken)
+	require.NoError(t, err)
+	assert.True(t, revoked, "старый refresh_token должен быть отозван")
+
+	_, err = server.Refresh(context.Background(), &pb.RefreshRequest{
+		RefreshToken: originalRefreshToken,
+	})
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Unauthenticated, st.Code())
+	assert.Contains(t, st.Message(), "token revoked")
 }

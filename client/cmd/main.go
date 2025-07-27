@@ -59,10 +59,10 @@ func main() {
 					cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
 				case "logout":
 					cmd.Action = commands.NewLogoutCommand(cfg.Server.Address).Action
-					// case "get":
-					//  cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
-					// case "delete":
-					//  cCtx.App.Commands[i] = commands.NewDeleteCommand(cfg.Server.Address)
+				case "get":
+					cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
+				case "delete":
+					cCtx.App.Commands[i] = commands.NewDeleteCommand(cfg.Server.Address)
 				}
 			}
 			return nil

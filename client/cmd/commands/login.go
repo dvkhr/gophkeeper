@@ -1,5 +1,3 @@
-// client/cmd/commands/login.go
-
 package commands
 
 import (

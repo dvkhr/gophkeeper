@@ -1,5 +1,3 @@
-// client/cmd/commands/logout.go
-
 package commands
 
 import (
@@ -23,7 +21,7 @@ func NewLogoutCommand(serverAddress string) *cli.Command {
 				return fmt.Errorf("вы не авторизованы")
 			}
 
-			masterPassword := "master-pass-placeholder"
+			masterPassword := "master-pass" //заменить!!!
 			key := crypto.DeriveKey(masterPassword, session.Salt)
 
 			client, err := grpc.New(serverAddress, key)

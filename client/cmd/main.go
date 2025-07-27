@@ -63,6 +63,8 @@ func main() {
 					cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
 				case "delete":
 					cCtx.App.Commands[i] = commands.NewDeleteCommand(cfg.Server.Address)
+				case "sync":
+					cCtx.App.Commands[i] = commands.NewSyncCommand(cfg.Server.Address)
 				}
 			}
 			return nil
@@ -75,6 +77,7 @@ func main() {
 			{Name: "logout"},
 			{Name: "get"},
 			{Name: "delete"},
+			{Name: "sync"},
 		},
 	}
 

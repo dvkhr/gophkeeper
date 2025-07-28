@@ -55,30 +55,60 @@ func NewAddCommand(serverAddress string) *cli.Command {
 
 // buildDataRecord — вспомогательная функция
 func buildDataRecord(cCtx *cli.Context) (*pb.DataRecord, error) {
+	if err := validateFlags(cCtx); err != nil {
+		return nil, err
+	}
+
+	metadata := buildMetadata(cCtx)
+
+	data, err := readData(cCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DataRecord{
+		Id:            cCtx.String("id"),
+		Type:          cCtx.String("type"),
+		EncryptedData: data,
+		Metadata:      metadata,
+	}, nil
+}
+
+// validateFlags проверяет, что для типа данных переданы нужные флаги
+func validateFlags(cCtx *cli.Context) error {
 	dataType := cCtx.String("type")
 	id := cCtx.String("id")
+
+	if id == "" {
+		return fmt.Errorf("требуется --id")
+	}
 
 	switch dataType {
 	case "loginpass":
 		if cCtx.String("login") == "" || cCtx.String("password") == "" {
-			return nil, fmt.Errorf("для loginpass нужны --login и --password")
+			return fmt.Errorf("для loginpass нужны --login и --password")
 		}
 	case "card":
 		if cCtx.String("number") == "" || cCtx.String("expiry") == "" {
-			return nil, fmt.Errorf("для card нужны --number и --expiry")
+			return fmt.Errorf("для card нужны --number и --expiry")
 		}
 	case "text":
 		if cCtx.String("content") == "" {
-			return nil, fmt.Errorf("для text нужен --content")
+			return fmt.Errorf("для text нужен --content")
 		}
 	case "binary":
 		if cCtx.String("file") == "" {
-			return nil, fmt.Errorf("для binary нужен --file")
+			return fmt.Errorf("для binary нужен --file")
 		}
 	default:
-		return nil, fmt.Errorf("неизвестный тип: %s", dataType)
+		return fmt.Errorf("неизвестный тип: %s", dataType)
 	}
 
+	return nil
+}
+
+// buildMetadata парсит флаг --meta в map[string]string
+func buildMetadata(cCtx *cli.Context) map[string]string {
 	metadata := make(map[string]string)
 	for _, meta := range cCtx.StringSlice("meta") {
 		for _, pair := range strings.Split(meta, ",") {
@@ -88,32 +118,31 @@ func buildDataRecord(cCtx *cli.Context) (*pb.DataRecord, error) {
 			}
 		}
 	}
+	return metadata
+}
 
-	var data []byte
-	var err error
+// readData читает данные в зависимости от типа
+func readData(cCtx *cli.Context) ([]byte, error) {
+	dataType := cCtx.String("type")
 
 	if cCtx.String("file") != "" {
-		data, err = os.ReadFile(cCtx.String("file"))
+		data, err := os.ReadFile(cCtx.String("file"))
 		if err != nil {
 			return nil, fmt.Errorf("не удалось прочитать файл: %w", err)
 		}
-	} else {
-		switch dataType {
-		case "loginpass":
-			data = []byte(fmt.Sprintf("login:%s\npassword:%s",
-				cCtx.String("login"), cCtx.String("password")))
-		case "card":
-			data = []byte(fmt.Sprintf("number:%s\nexpiry:%s\ncvv:%s",
-				cCtx.String("number"), cCtx.String("expiry"), cCtx.String("cvv")))
-		case "text":
-			data = []byte(cCtx.String("content"))
-		}
+		return data, nil
 	}
 
-	return &pb.DataRecord{
-		Id:            id,
-		Type:          dataType,
-		EncryptedData: []byte(data),
-		Metadata:      metadata,
-	}, nil
+	switch dataType {
+	case "loginpass":
+		return []byte(fmt.Sprintf("login:%s\npassword:%s",
+			cCtx.String("login"), cCtx.String("password"))), nil
+	case "card":
+		return []byte(fmt.Sprintf("number:%s\nexpiry:%s\ncvv:%s",
+			cCtx.String("number"), cCtx.String("expiry"), cCtx.String("cvv"))), nil
+	case "text":
+		return []byte(cCtx.String("content")), nil
+	}
+
+	return nil, fmt.Errorf("неожиданный тип: %s", dataType)
 }

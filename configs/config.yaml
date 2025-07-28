@@ -1,0 +1,12 @@
+server:
+  port: 50051
+  mode: development
+
+database:
+  dsn:  "host=localhost port=5432 user=postgres password=postgres dbname=gophkeeper sslmode=disable"
+
+auth:
+  jwt_secret: super-secret-key
+  jwt_ttl_hours: 0
+  jwt_ttl_minutes: 1
+  refresh_token_ttl_days: 7

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>auth - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.22.2";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package auth
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dvkhr/gophkeeper/server/internal/auth"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package auth предоставляет функции аутентификации и авторизации для GophKeeper.
+Включает:
+- генерацию и парсинг JWT-токенов,
+- работу с refresh-токенами,
+- хэширование и проверку паролей,
+- контекстный интерсептор для gRPC.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+				
+				<dd><a href="#AuthInterceptor">func AuthInterceptor(cfg config.Config, repo repository.TokenRepository) grpc.UnaryServerInterceptor</a></dd>
+			
+				
+				<dd><a href="#CheckPasswordHash">func CheckPasswordHash(password, hash string) bool</a></dd>
+			
+				
+				<dd><a href="#GenerateRandomString">func GenerateRandomString(n int) string</a></dd>
+			
+				
+				<dd><a href="#GenerateRefreshToken">func GenerateRefreshToken(repo repository.TokenRepository, userID string, cfg config.Config) (string, error)</a></dd>
+			
+				
+				<dd><a href="#GenerateToken">func GenerateToken(cfg config.Config, userID string) (string, error)</a></dd>
+			
+				
+				<dd><a href="#GetUserID">func GetUserID(ctx context.Context) (string, bool)</a></dd>
+			
+				
+				<dd><a href="#HashPassword">func HashPassword(password string) (string, error)</a></dd>
+			
+				
+				<dd><a href="#RevokeRefreshToken">func RevokeRefreshToken(repo repository.TokenRepository, token string) error</a></dd>
+			
+				
+				<dd><a href="#WithUserID">func WithUserID(ctx context.Context, userID string) context.Context</a></dd>
+			
+			
+				
+				<dd><a href="#Claims">type Claims</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#ParseToken">func ParseToken(cfg config.Config, tokenStr string) (*Claims, error)</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/auth.go">auth.go</a>
+			
+				<a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/contex.go">contex.go</a>
+			
+				<a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/middleware.go">middleware.go</a>
+			
+				<a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/password.go">password.go</a>
+			
+				<a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/token.go">token.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+			
+			
+			<h2 id="AuthInterceptor">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/middleware.go?s=792:892#L14">AuthInterceptor</a>
+				<a class="permalink" href="#AuthInterceptor">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AuthInterceptor(cfg <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/">config</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/#Config">Config</a>, repo <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/">repository</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/#TokenRepository">TokenRepository</a>) <a href="/pkg/google.golang.org/grpc/">grpc</a>.<a href="/pkg/google.golang.org/grpc/#UnaryServerInterceptor">UnaryServerInterceptor</a></pre>
+			<p>AuthInterceptor — gRPC middleware для проверки JWT-токена в заголовках.
+Пропускает методы /keeper.KeeperService/Login и /keeper.KeeperService/Register без проверки.
+Для остальных методов:
+- извлекает Bearer-токен,
+- проверяет его валидность,
+- проверяет, не отозван ли он,
+- добавляет userID в контекст.
+
+			
+			
+
+		
+			
+			
+			<h2 id="CheckPasswordHash">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/password.go?s=619:669#L6">CheckPasswordHash</a>
+				<a class="permalink" href="#CheckPasswordHash">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CheckPasswordHash(password, hash <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
+			<p>CheckPasswordHash проверяет, совпадает ли пароль с хэшем.
+Возвращает true, если пароль совпадает, и false в противном случае.
+
+			
+			
+
+		
+			
+			
+			<h2 id="GenerateRandomString">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/token.go?s=1128:1167#L24">GenerateRandomString</a>
+				<a class="permalink" href="#GenerateRandomString">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GenerateRandomString(n <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#string">string</a></pre>
+			<p>GenerateRandomString генерирует случайную строку указанной длины.
+Используется для создания refresh-токенов.
+
+			
+			
+
+		
+			
+			
+			<h2 id="GenerateRefreshToken">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/token.go?s=411:519#L6">GenerateRefreshToken</a>
+				<a class="permalink" href="#GenerateRefreshToken">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GenerateRefreshToken(repo <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/">repository</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/#TokenRepository">TokenRepository</a>, userID <a href="/pkg/builtin/#string">string</a>, cfg <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/">config</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/#Config">Config</a>) (<a href="/pkg/builtin/#string">string</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>GenerateRefreshToken генерирует случайный refresh-токен и сохраняет его в БД.
+Токен действителен в течение RefreshTokenTTLDays дней.
+
+			
+			
+
+		
+			
+			
+			<h2 id="GenerateToken">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/auth.go?s=923:991#L14">GenerateToken</a>
+				<a class="permalink" href="#GenerateToken">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GenerateToken(cfg <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/">config</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/#Config">Config</a>, userID <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#string">string</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>GenerateToken — создаёт новый JWT-токен для пользователя
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetUserID">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/contex.go?s=702:752#L5">GetUserID</a>
+				<a class="permalink" href="#GetUserID">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetUserID(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) (<a href="/pkg/builtin/#string">string</a>, <a href="/pkg/builtin/#bool">bool</a>)</pre>
+			<p>GetUserID извлекает идентификатор пользователя из контекста.
+
+			
+			
+
+		
+			
+			
+			<h2 id="HashPassword">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/password.go?s=243:293#L1">HashPassword</a>
+				<a class="permalink" href="#HashPassword">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func HashPassword(password <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#string">string</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>HashPassword хэширует пароль с использованием bcrypt.
+Возвращает хэш и ошибку, если хэширование не удалось.
+
+			
+			
+
+		
+			
+			
+			<h2 id="RevokeRefreshToken">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/token.go?s=823:899#L18">RevokeRefreshToken</a>
+				<a class="permalink" href="#RevokeRefreshToken">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func RevokeRefreshToken(repo <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/">repository</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/repository/#TokenRepository">TokenRepository</a>, token <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+			<p>RevokeRefreshToken отзывает refresh-токен.
+
+			
+			
+
+		
+			
+			
+			<h2 id="WithUserID">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/contex.go?s=468:535#L1">WithUserID</a>
+				<a class="permalink" href="#WithUserID">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func WithUserID(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, userID <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a></pre>
+			<p>WithUserID добавляет идентификатор пользователя в контекст.
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="Claims">type <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/auth.go?s=751:827#L8">Claims</a>
+				<a class="permalink" href="#Claims">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Claims — структура полезной нагрузки (payload) JWT-токена.
+Включает идентификатор пользователя и стандартные claims (ExpiresAt, IssuedAt, Issuer и др.).
+
+			<pre>type Claims struct {
+<span id="Claims.UserID"></span>    UserID <a href="/pkg/builtin/#string">string</a> `json:&#34;user_id&#34;`
+    jwt.<a href="#RegisteredClaims">RegisteredClaims</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="ParseToken">func <a href="/src/github.com/dvkhr/gophkeeper/server/internal/auth/auth.go?s=1603:1671#L30">ParseToken</a>
+					<a class="permalink" href="#ParseToken">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func ParseToken(cfg <a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/">config</a>.<a href="/pkg/github.com/dvkhr/gophkeeper/server/internal/config/#Config">Config</a>, tokenStr <a href="/pkg/builtin/#string">string</a>) (*<a href="#Claims">Claims</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>ParseToken — разбирает строку токена и возвращает claims.
+Возвращает ошибку, если токен недействителен или подпись не совпадает.
+
+				
+				
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.22.2.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

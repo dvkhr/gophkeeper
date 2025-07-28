@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/dvkhr/gophkeeper/client/grpc"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -24,7 +24,7 @@ func NewLoginCommand(serverAddress string) *cli.Command {
 			password := cCtx.String("password")
 
 			tempKey := crypto.DeriveKey(password, []byte("temp-salt"))
-			client, err := grpc.New(serverAddress, tempKey)
+			client, err := client.NewClient(serverAddress, tempKey)
 			if err != nil {
 				return err
 			}

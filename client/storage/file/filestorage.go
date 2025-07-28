@@ -63,12 +63,6 @@ func Load() (*Data, error) {
 	return &data, nil
 }
 
-// Clear удаляет файл
-func Clear() error {
-	path := getPath()
-	return os.Remove(path)
-}
-
 // Delete удаляет файл сессии
 func Delete() error {
 	configDir, err := os.UserConfigDir()

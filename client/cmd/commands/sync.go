@@ -3,18 +3,18 @@ package commands
 import (
 	"fmt"
 
-	"github.com/dvkhr/gophkeeper/client/session"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/urfave/cli/v2"
 )
 
 // NewSyncCommand создаёт команду sync
-func NewSyncCommand(serverAddress string) *cli.Command {
+func NewSyncCommand(factory *client.Factory) *cli.Command {
 	return &cli.Command{
 		Name:  "sync",
 		Usage: "Синхронизировать данные с сервером",
 		Action: func(cCtx *cli.Context) error {
-			client, err := session.LoadAuthenticatedClient(serverAddress)
+			client, err := factory.NewAuthenticatedClient()
 			if err != nil {
 				return err
 			}

@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/dvkhr/gophkeeper/client/grpc"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
 	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
@@ -37,7 +37,7 @@ func NewRegisterCommand(serverAddress string) *cli.Command {
 
 			masterKeyHash := crypto.SHA256(key)
 
-			client, err := grpc.New(serverAddress, key)
+			client, err := client.NewClient(serverAddress, key)
 			if err != nil {
 				logger.Logg.Error("Не удалось создать gRPC-клиент", "error", err)
 				return err

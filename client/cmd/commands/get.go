@@ -5,13 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dvkhr/gophkeeper/client/session"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/urfave/cli/v2"
 )
 
 // NewGetCommand создаёт команду get
-func NewGetCommand(serverAddress string) *cli.Command {
+func NewGetCommand(factory *client.Factory) *cli.Command {
 	return &cli.Command{
 		Name:  "get",
 		Usage: "Получить все сохранённые данные",
@@ -27,7 +27,7 @@ func NewGetCommand(serverAddress string) *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			client, err := session.LoadAuthenticatedClient(serverAddress)
+			client, err := factory.NewAuthenticatedClient()
 			if err != nil {
 				return err
 			}

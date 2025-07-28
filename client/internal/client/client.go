@@ -1,4 +1,4 @@
-// Package grpc предоставляет gRPC-клиент для взаимодействия с сервером GophKeeper.
+// Package client предоставляет gRPC-клиент для взаимодействия с сервером GophKeeper.
 //
 // Клиент отвечает за:
 //   - Установление безопасного соединения с сервером.
@@ -7,7 +7,7 @@
 //   - Сохранение сессии (токенов и соли) в локальном хранилище.
 //
 // Все данные шифруются на клиенте, сервер хранит только зашифрованные данные.
-package grpc
+package client
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type Client struct {
 
 // New создаёт новый gRPC-клиент и устанавливает соединение с сервером.
 // address — адрес сервера, например "localhost:50051"
-func New(address string, encryptionKey []byte) (*Client, error) {
+func NewClient(address string, encryptionKey []byte) (*Client, error) {
 	clientConn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("не удалось подключиться к серверу: %w", err)

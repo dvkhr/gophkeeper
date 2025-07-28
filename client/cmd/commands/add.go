@@ -5,13 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dvkhr/gophkeeper/client/session"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/urfave/cli/v2"
 )
 
 // NewAddCommand создаёт команду add
-func NewAddCommand(serverAddress string) *cli.Command {
+func NewAddCommand(factory *client.Factory) *cli.Command {
 	return &cli.Command{
 		Name:  "add",
 		Usage: "Добавить данные c метаинформацией",
@@ -28,7 +28,7 @@ func NewAddCommand(serverAddress string) *cli.Command {
 			&cli.StringSliceFlag{Name: "meta", Aliases: []string{"m"}},
 		},
 		Action: func(cCtx *cli.Context) error {
-			client, err := session.LoadAuthenticatedClient(serverAddress)
+			client, err := factory.NewAuthenticatedClient()
 			if err != nil {
 				return err
 			}

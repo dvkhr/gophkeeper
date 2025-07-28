@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/dvkhr/gophkeeper/client/cmd/commands"
+	"github.com/dvkhr/gophkeeper/client/internal/client"
 	"github.com/dvkhr/gophkeeper/client/internal/config"
+	"github.com/dvkhr/gophkeeper/client/session"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/urfave/cli/v2"
 )
@@ -46,25 +48,29 @@ func main() {
 			},
 		},
 		Before: func(cCtx *cli.Context) error {
-			// Загружаем конфиг из: флаг > env > файл
+			// Загружаем конфиг
 			cfg := config.Load(flagServer)
+			// Создаем компоненты
+			sessionManager := session.NewManager()
+			authenticator := client.NewAuthenticator(sessionManager)
+			factory := client.NewFactory(sessionManager, authenticator, cfg.Server.Address)
 
 			for i, cmd := range cCtx.App.Commands {
 				switch cmd.Name {
 				case "register":
 					cCtx.App.Commands[i] = commands.NewRegisterCommand(cfg.Server.Address)
 				case "add":
-					cCtx.App.Commands[i] = commands.NewAddCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewAddCommand(factory)
 				case "login":
 					cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
 				case "logout":
 					cmd.Action = commands.NewLogoutCommand(cfg.Server.Address).Action
 				case "get":
-					cCtx.App.Commands[i] = commands.NewGetCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewGetCommand(factory)
 				case "delete":
-					cCtx.App.Commands[i] = commands.NewDeleteCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewDeleteCommand(factory)
 				case "sync":
-					cCtx.App.Commands[i] = commands.NewSyncCommand(cfg.Server.Address)
+					cCtx.App.Commands[i] = commands.NewSyncCommand(factory)
 				}
 			}
 			return nil

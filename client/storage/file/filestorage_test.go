@@ -62,7 +62,7 @@ func TestClear(t *testing.T) {
 	_, err = os.Stat(getPath())
 	require.NoError(t, err)
 
-	err = Clear()
+	err = Delete()
 	require.NoError(t, err)
 
 	_, err = os.Stat(getPath())

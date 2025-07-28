@@ -64,7 +64,7 @@ func main() {
 				case "login":
 					cCtx.App.Commands[i] = commands.NewLoginCommand(cfg.Server.Address)
 				case "logout":
-					cmd.Action = commands.NewLogoutCommand(cfg.Server.Address).Action
+					cmd.Action = commands.NewLogoutCommand(factory).Action
 				case "get":
 					cCtx.App.Commands[i] = commands.NewGetCommand(factory)
 				case "delete":

@@ -4,39 +4,27 @@ import (
 	"fmt"
 
 	"github.com/dvkhr/gophkeeper/client/internal/client"
-	"github.com/dvkhr/gophkeeper/client/internal/utils"
 	"github.com/dvkhr/gophkeeper/client/storage/file"
-	"github.com/dvkhr/gophkeeper/pkg/crypto"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/urfave/cli/v2"
 )
 
 // NewLogoutCommand создаёт команду logout
-func NewLogoutCommand(serverAddress string) *cli.Command {
+func NewLogoutCommand(factory *client.Factory) *cli.Command {
 	return &cli.Command{
 		Name:  "logout",
 		Usage: "Выйти из аккаунта",
 		Action: func(cCtx *cli.Context) error {
-			session, err := file.Load()
-			if err != nil || session.RefreshToken == "" {
-				return fmt.Errorf("вы не авторизованы")
-			}
-
-			masterPassword, err := utils.ReadMasterPassword("Master-пароль: ")
-			if err != nil {
-				return fmt.Errorf("не удалось считать пароль: %w", err)
-			}
-			defer utils.ZeroBytes(masterPassword)
-
-			key := crypto.DeriveKey(string(masterPassword), session.Salt)
-
-			client, err := client.NewClient(serverAddress, key)
+			client, err := factory.NewAuthenticatedClient()
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			client.SetToken(session.AccessToken, session.RefreshToken)
+			session, err := file.Load()
+			if err != nil || session.RefreshToken == "" {
+				return fmt.Errorf("вы не авторизованы")
+			}
 
 			err = client.Logout(session.RefreshToken)
 			if err != nil {

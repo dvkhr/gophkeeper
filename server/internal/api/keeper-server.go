@@ -13,14 +13,11 @@ package api
 
 import (
 	"context"
-	"database/sql"
-	"strings"
 
 	"github.com/dvkhr/gophkeeper/pb"
 	"github.com/dvkhr/gophkeeper/pkg/logger"
 	"github.com/dvkhr/gophkeeper/server/internal/auth"
-	"github.com/dvkhr/gophkeeper/server/internal/config"
-	"github.com/dvkhr/gophkeeper/server/internal/repository"
+	"github.com/dvkhr/gophkeeper/server/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,124 +26,57 @@ import (
 // Хранит репозиторий и конфигурацию для доступа к БД, аутентификации и генерации токенов.
 type KeeperServer struct {
 	pb.UnimplementedKeeperServiceServer
-	repo repository.Repository
-	cfg  *config.Config
+	srv *service.Service
 }
 
 // NewKeeperServer создаёт новый экземпляр KeeperServer.
-func NewKeeperServer(repo repository.Repository, cfg *config.Config) *KeeperServer {
+func NewKeeperServer(srv *service.Service) *KeeperServer {
 	return &KeeperServer{
-		repo: repo,
-		cfg:  cfg,
+		srv: srv,
 	}
 }
 
-// Register обрабатывает запрос на регистрацию нового пользователя.
-// Ожидает зашифрованный пароль (EncryptedPassword) от клиента.
-// Хэширует пароль и сохраняет пользователя в БД.
-// Возвращает пару токенов: access и refresh.
+// Register обрабатывает gRPC-запрос на регистрацию нового пользователя.
 func (s *KeeperServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
+
 	logger.Logg.Info("Register request", "login", req.Login)
 
-	hashedPassword, err := auth.HashPassword(string(req.EncryptedPassword))
+	resp, err := s.srv.Register(ctx, req.Login, string(req.EncryptedPassword))
 	if err != nil {
-		logger.Logg.Error("Failed to hash password", "error", err)
 		return nil, err
 	}
 
-	userID, err := s.repo.CreateUser(req.Login, hashedPassword)
-	if err != nil {
-		logger.Logg.Error("Register failed", "error", err)
-
-		// Проверяем, что это ошибка дубликата
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return nil, status.Errorf(codes.AlreadyExists, "user with this login already exists")
-		}
-
-		return nil, status.Errorf(codes.Internal, "failed to create user")
-	}
-
-	refreshToken, err := auth.GenerateRefreshToken(s.repo, userID, *s.cfg)
-	if err != nil {
-		logger.Logg.Error("Failed to generate refresh token", "error", err)
-		return nil, err
-	}
-
-	accessToken, err := auth.GenerateToken(*s.cfg, userID)
-	if err != nil {
-		logger.Logg.Error("Failed to generate access token", "error", err)
-		return nil, err
-	}
-	logger.Logg.Info("Register: user create", "user_id", userID, "login", req.Login)
-
-	return &pb.AuthResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		UserId:       userID,
-	}, nil
+	logger.Logg.Info("Register: user create", "user_id", resp.UserId, "login", req.Login)
+	return resp, nil
 }
 
-// Login обрабатывает запрос на вход.
-// Проверяет логин и зашифрованный пароль.
-// Если данные верны — возвращает пару токенов.
+// Login обрабатывает gRPC-запрос на вход пользователя.
 func (s *KeeperServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
 	logger.Logg.Info("Login request", "login", req.Login)
 
-	user, err := s.repo.GetUserByLogin(req.Login)
+	resp, err := s.srv.Login(ctx, req.Login, string(req.EncryptedPassword))
 	if err != nil {
-		logger.Logg.Error("Login failed", "error", err)
-		return nil, err
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "User not found")
-	}
-
-	if !auth.CheckPasswordHash(string(req.EncryptedPassword), user.PasswordHash) {
-		return nil, status.Errorf(codes.Unauthenticated, "Invalid credentials")
-	}
-
-	refreshToken, err := auth.GenerateRefreshToken(s.repo, user.ID, *s.cfg)
-	if err != nil {
-		logger.Logg.Error("Failed to generate refresh token", "error", err)
 		return nil, err
 	}
 
-	accessToken, err := auth.GenerateToken(*s.cfg, user.ID)
-	if err != nil {
-		logger.Logg.Error("Failed to generate access token", "error", err)
-		return nil, err
-	}
-
-	return &pb.AuthResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
+	return resp, nil
 }
 
 // StoreData сохраняет зашифрованные данные пользователя в системе.
-// Проверяет, что пользователь авторизован (userID в контексте).
-// Проверяет, что запись и её ID не пустые.
-// Сохраняет или обновляет данные через репозиторий.
 func (s *KeeperServer) StoreData(ctx context.Context, req *pb.StoreDataRequest) (*pb.StatusResponse, error) {
 	userID, ok := auth.GetUserID(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+		return nil, status.Errorf(codes.Unauthenticated, "missing user ID in context")
 	}
 
 	if req.Record == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Record is required")
 	}
 
-	if req.Record.Id == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "Record ID is required")
-	}
+	logger.Logg.Info("Storing data", "type", req.Record.Type, "user", userID, "id", req.Record.Id)
 
-	logger.Logg.Info("Storing data", "type", req.Record.Type, "user", userID)
-
-	err := s.repo.SaveData(userID, req.Record)
-	if err != nil {
-		logger.Logg.Error("Failed to store data", "error", err)
-		return nil, status.Errorf(codes.Internal, "Failed to save data")
+	if err := s.srv.StoreData(ctx, userID, req.Record); err != nil {
+		return nil, err
 	}
 
 	return &pb.StatusResponse{
@@ -157,19 +87,18 @@ func (s *KeeperServer) StoreData(ctx context.Context, req *pb.StoreDataRequest) 
 
 // GetData возвращает все неудалённые данные пользователя.
 // Проверяет, что пользователь авторизован (userID в контексте).
-// Загружает все записи из БД через репозиторий.
+// Загружает все записи из БД через сервис.
 func (s *KeeperServer) GetData(ctx context.Context, req *pb.GetDataRequest) (*pb.DataResponse, error) {
 	userID, ok := auth.GetUserID(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+		return nil, status.Errorf(codes.Unauthenticated, "missing user ID in context")
 	}
 
 	logger.Logg.Info("Getting all data", "user", userID)
 
-	records, err := s.repo.GetAllData(userID)
+	records, err := s.srv.GetData(ctx, userID)
 	if err != nil {
-		logger.Logg.Error("Failed to get data", "error", err)
-		return nil, status.Errorf(codes.Internal, "Failed to retrieve data")
+		return nil, err
 	}
 
 	return &pb.DataResponse{
@@ -184,63 +113,36 @@ func (s *KeeperServer) GetData(ctx context.Context, req *pb.GetDataRequest) (*pb
 func (s *KeeperServer) SyncData(ctx context.Context, req *pb.SyncRequest) (*pb.SyncResponse, error) {
 	userID, ok := auth.GetUserID(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+		return nil, status.Errorf(codes.Unauthenticated, "missing user ID in context")
 	}
 
 	logger.Logg.Info("Syncing data", "count", len(req.Records), "user", userID)
 
-	// сохраняем
-	for _, record := range req.Records {
-		if record == nil || record.Id == "" {
-			continue // пропускаем невалидные
-		}
-		if err := s.repo.SaveData(userID, record); err != nil {
-			logger.Logg.Error("Failed to sync record", "id", record.Id, "error", err)
-		}
-	}
-
-	// получаем с сервера
-	remoteRecords, err := s.repo.GetAllData(userID)
+	records, err := s.srv.SyncData(ctx, userID, req.Records)
 	if err != nil {
-		logger.Logg.Error("Failed to fetch remote data", "error", err)
-		return nil, status.Errorf(codes.Internal, "Failed to retrieve remote data")
+		return nil, err
 	}
 
 	return &pb.SyncResponse{
-		Records: remoteRecords,
+		Records: records,
 	}, nil
 }
 
-// DeleteData помечает запись как удалённую (soft delete).
-// Проверяет, что пользователь авторизован.
-// Проверяет, что запись существует и принадлежит пользователю.
-// Устанавливает флаг "deleted = true" в БД.
+// DeleteData помечает запись как удалённую.
 func (s *KeeperServer) DeleteData(ctx context.Context, req *pb.DeleteDataRequest) (*pb.StatusResponse, error) {
 	userID, ok := auth.GetUserID(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "Missing user ID in context")
+		return nil, status.Errorf(codes.Unauthenticated, "missing user ID in context")
 	}
-
-	logger.Logg.Info("Deleting data", "record_id", req.Id, "user", userID)
 
 	if req.Id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "Record ID is required")
 	}
 
-	// Проверяем, существует ли запись и принадлежит ли пользователю
-	exists, err := s.repo.DataExistsForUser(req.Id, userID)
-	if err != nil {
-		logger.Logg.Error("Failed to check data ownership", "error", err)
-		return nil, status.Errorf(codes.Internal, "Failed to verify data ownership")
-	}
-	if !exists {
-		return nil, status.Errorf(codes.NotFound, "Data not found or access denied")
-	}
+	logger.Logg.Info("Deleting data", "record_id", req.Id, "user", userID)
 
-	err = s.repo.MarkDataAsDeleted(req.Id)
-	if err != nil {
-		logger.Logg.Error("Failed to delete data", "error", err)
-		return nil, status.Errorf(codes.Internal, "Failed to delete data")
+	if err := s.srv.DeleteData(ctx, userID, req.Id); err != nil {
+		return nil, err
 	}
 
 	return &pb.StatusResponse{
@@ -249,50 +151,29 @@ func (s *KeeperServer) DeleteData(ctx context.Context, req *pb.DeleteDataRequest
 	}, nil
 }
 
+// Refresh обновляет пару токенов (access и refresh) по старому refresh-токену.
 func (s *KeeperServer) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.AuthResponse, error) {
-	revoked, err := s.repo.IsRefreshTokenRevoked(req.RefreshToken)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to check token status")
-	}
-	if revoked {
-		return nil, status.Error(codes.Unauthenticated, "token revoked")
+	if req.RefreshToken == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "refresh token is required")
 	}
 
-	userID, err := s.repo.GetUserIDByRefreshToken(req.RefreshToken)
+	resp, err := s.srv.Refresh(ctx, req.RefreshToken)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, status.Error(codes.Unauthenticated, "invalid refresh token")
-		}
-		return nil, status.Error(codes.Internal, "failed to get user ID")
+		return nil, err
 	}
 
-	newAccessToken, err := auth.GenerateToken(*s.cfg, userID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate access token")
-	}
-
-	newRefreshToken, err := auth.GenerateRefreshToken(s.repo, userID, *s.cfg)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate refresh token")
-	}
-
-	err = s.repo.RevokeRefreshToken(req.RefreshToken)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to revoke old token")
-	}
-
-	return &pb.AuthResponse{
-		AccessToken:  newAccessToken,
-		RefreshToken: newRefreshToken,
-		UserId:       userID,
-	}, nil
+	return resp, nil
 }
 
 // Logout отзывает refresh_token
 func (s *KeeperServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	err := s.repo.RevokeRefreshToken(req.RefreshToken)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to revoke token")
+	if req.RefreshToken == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "refresh token is required")
 	}
+
+	if err := s.srv.Logout(ctx, req.RefreshToken); err != nil {
+		return nil, err
+	}
+
 	return &pb.LogoutResponse{Success: true}, nil
 }

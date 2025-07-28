@@ -14,6 +14,7 @@ import (
 	"github.com/dvkhr/gophkeeper/server/internal/config"
 	"github.com/dvkhr/gophkeeper/server/internal/db"
 	"github.com/dvkhr/gophkeeper/server/internal/repository"
+	"github.com/dvkhr/gophkeeper/server/internal/service"
 	"google.golang.org/grpc"
 )
 
@@ -51,7 +52,8 @@ func main() {
 	logger.Logg.Info("Database is ready. Starting server...")
 
 	repo := repository.NewPostgresRepository(dbConn)
-	server := api.NewKeeperServer(repo, cfg)
+	service := service.New(repo, cfg)
+	server := api.NewKeeperServer(service)
 
 	// Подготовка gRPC сервера
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Server.Port))

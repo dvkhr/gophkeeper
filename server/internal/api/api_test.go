@@ -12,6 +12,7 @@ import (
 	"github.com/dvkhr/gophkeeper/server/internal/config"
 	"github.com/dvkhr/gophkeeper/server/internal/db"
 	"github.com/dvkhr/gophkeeper/server/internal/repository"
+	"github.com/dvkhr/gophkeeper/server/internal/service"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,8 +51,9 @@ func setupTestServer(t *testing.T) *KeeperServer {
 			RefreshTokenTTLDays: 7,
 		},
 	}
+	srv := service.New(repo, cfg)
 
-	return NewKeeperServer(repo, cfg)
+	return NewKeeperServer(srv)
 }
 
 // успешная регистрация
@@ -159,7 +161,7 @@ func TestStoreData_Success(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	record := &pb.DataRecord{
@@ -190,7 +192,7 @@ func TestStoreData_Update(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	record := &pb.DataRecord{
@@ -225,7 +227,7 @@ func TestStoreData_EmptyId(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	record := &pb.DataRecord{
@@ -257,7 +259,7 @@ func TestStoreData_RecordNil(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	req := &pb.StoreDataRequest{Record: nil}
@@ -304,7 +306,7 @@ func TestGetData_Empty(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -325,7 +327,7 @@ func TestGetData_WithRecords(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	record := &pb.DataRecord{
@@ -374,7 +376,7 @@ func TestGetData_DoesNotReturnDeleted(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -406,7 +408,7 @@ func TestSyncData_Empty(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -427,7 +429,7 @@ func TestSyncData_NewRecords(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	records := []*pb.DataRecord{
@@ -469,7 +471,7 @@ func TestSyncData_UpdateRecords(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -504,7 +506,7 @@ func TestSyncData_SkipInvalidRecords(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -532,7 +534,7 @@ func TestDeleteData_Success(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -566,7 +568,7 @@ func TestDeleteData_EmptyId(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -605,7 +607,7 @@ func TestDeleteData_NotFound(t *testing.T) {
 	registerResp, err := server.Register(context.Background(), registerReq)
 	require.NoError(t, err)
 
-	userID, err := auth.ParseToken(*server.cfg, registerResp.AccessToken)
+	userID, err := auth.ParseToken(*server.srv.Cfg, registerResp.AccessToken)
 	require.NoError(t, err)
 
 	ctx := auth.WithUserID(context.Background(), userID.UserID)
@@ -630,7 +632,7 @@ func TestDeleteData_OtherUserRecord(t *testing.T) {
 	registerResp1, err := server.Register(context.Background(), registerReq1)
 	require.NoError(t, err)
 
-	userID1, err := auth.ParseToken(*server.cfg, registerResp1.AccessToken)
+	userID1, err := auth.ParseToken(*server.srv.Cfg, registerResp1.AccessToken)
 	require.NoError(t, err)
 
 	ctx1 := auth.WithUserID(context.Background(), userID1.UserID)
@@ -650,7 +652,7 @@ func TestDeleteData_OtherUserRecord(t *testing.T) {
 	registerResp2, err := server.Register(context.Background(), registerReq2)
 	require.NoError(t, err)
 
-	userID2, err := auth.ParseToken(*server.cfg, registerResp2.AccessToken)
+	userID2, err := auth.ParseToken(*server.srv.Cfg, registerResp2.AccessToken)
 	require.NoError(t, err)
 
 	ctx2 := auth.WithUserID(context.Background(), userID2.UserID)
@@ -693,7 +695,7 @@ func TestRefresh_Success(t *testing.T) {
 	require.NotEqual(t, refreshResp.RefreshToken, originalRefreshToken)
 	require.Equal(t, refreshResp.UserId, userID)
 
-	revoked, err := server.repo.IsRefreshTokenRevoked(originalRefreshToken)
+	revoked, err := server.srv.Repo.IsRefreshTokenRevoked(originalRefreshToken)
 	require.NoError(t, err)
 	assert.True(t, revoked, "старый refresh_token должен быть отозван")
 
@@ -729,7 +731,7 @@ func TestLogout_Success(t *testing.T) {
 	require.NotNil(t, logoutResp)
 	assert.True(t, logoutResp.Success, "ожидался успех при выходе")
 
-	revoked, err := server.repo.IsRefreshTokenRevoked(originalRefreshToken)
+	revoked, err := server.srv.Repo.IsRefreshTokenRevoked(originalRefreshToken)
 	require.NoError(t, err)
 	assert.True(t, revoked, "refresh_token должен быть отозван после Logout")
 

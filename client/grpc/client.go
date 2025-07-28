@@ -94,17 +94,9 @@ func (c *Client) Login(login string, encryptedPassword []byte) (*pb.AuthResponse
 
 // StoreData сохраняет одну запись в хранилище.
 func (c *Client) StoreData(record *pb.DataRecord) (*pb.StatusResponse, error) {
-	encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
+	encryptedRecord, err := c.encryptRecord(record)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка шифрования: %w", err)
-	}
-
-	encryptedRecord := &pb.DataRecord{
-		Id:            record.Id,
-		Type:          record.Type,
-		EncryptedData: encryptedData,
-		Metadata:      record.Metadata,
-		Timestamp:     record.Timestamp,
+		return nil, err
 	}
 
 	ctx := c.authContext()
@@ -139,18 +131,13 @@ func (c *Client) GetData() (*pb.DataResponse, error) {
 func (c *Client) SyncData(records []*pb.DataRecord) (*pb.SyncResponse, error) {
 	var encryptedRecords []*pb.DataRecord
 	for _, record := range records {
-		encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
+		encryptedRecord, err := c.encryptRecord(record)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка шифрования записи %s: %w", record.Id, err)
+			return nil, err
 		}
-
-		encryptedRecords = append(encryptedRecords, &pb.DataRecord{
-			Id:            record.Id,
-			Type:          record.Type,
-			EncryptedData: encryptedData,
-			Metadata:      record.Metadata,
-			Timestamp:     record.Timestamp,
-		})
+		if encryptedRecord != nil {
+			encryptedRecords = append(encryptedRecords, encryptedRecord)
+		}
 	}
 
 	ctx := c.authContext()
@@ -260,4 +247,24 @@ func (c *Client) Logout(refreshToken string) error {
 	}
 	_, err := c.service.Logout(context.Background(), req)
 	return err
+}
+
+// encryptRecord шифрует данные одной записи
+func (c *Client) encryptRecord(record *pb.DataRecord) (*pb.DataRecord, error) {
+	if record == nil {
+		return nil, nil
+	}
+
+	encryptedData, err := c.crypto.Encrypt(record.EncryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка шифрования записи %s: %w", record.Id, err)
+	}
+
+	return &pb.DataRecord{
+		Id:            record.Id,
+		Type:          record.Type,
+		EncryptedData: encryptedData,
+		Metadata:      record.Metadata,
+		Timestamp:     record.Timestamp,
+	}, nil
 }

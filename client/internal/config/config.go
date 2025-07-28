@@ -4,10 +4,7 @@ import (
 	"os"
 
 	"github.com/dvkhr/gophkeeper/pkg/logger"
-	"gopkg.in/yaml.v3"
 )
-
-const configFilePath = "/home/max/go/src/GophKeeper/configs/client.yaml"
 
 type Config struct {
 	Server struct {
@@ -17,8 +14,6 @@ type Config struct {
 
 func Load(flagAddress string) *Config {
 	cfg := &Config{}
-
-	loadFromFile(cfg)
 
 	if envAddr := os.Getenv("GK_SERVER"); envAddr != "" {
 		if err := ValidateServerAddress(envAddr); err != nil {
@@ -53,32 +48,4 @@ func Load(flagAddress string) *Config {
 	}
 
 	return cfg
-}
-
-// loadFromFile загружает конфигурацию из YAML-файла, если он существует.
-// Игнорирует все ошибки, логгируя их на уровне WARN.
-// Не возвращает ошибку, так как файл не обязателен.
-func loadFromFile(cfg *Config) {
-
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		logger.Logg.Warn("Конфигурационный файл не найден", "path", configFilePath)
-		return
-	}
-
-	data, err := os.ReadFile(configFilePath)
-	if err != nil {
-		logger.Logg.Warn("Не удалось прочитать конфигурационный файл",
-			"path", configFilePath,
-			"error", err)
-		return
-	}
-
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		logger.Logg.Warn("Не удалось разобрать YAML-конфиг",
-			"path", configFilePath,
-			"error", err)
-		return
-	}
-
-	logger.Logg.Info("Конфигурация успешно загружена из файла", "path", configFilePath)
 }
